@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>WedgeWise Privacy Policy</title>
+<meta name="description" content="WedgeWise builds your personal wedge yardages for every club and swing, adjusted for today's temperature and elevation.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one centered column, navy header band, white page, gold used only for rules and marks. */
+:root{
+  --navy:#041E42; --blue:#1E407C; --gold:#C9A44C;
+  --bg:#FFFFFF; --panel:#F4F7FB; --ink:#0B1A33; --muted:#55657C; --line:#D9E1EC;
+  --on-navy:#FFFFFF; --on-navy-muted:#B9C8E2; --link:#1E407C;
+  --display:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --body:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#050F20;--panel:#0C1A30;--ink:#EEF2F8;--muted:#9AA8BD;--line:#22324D;--navy:#0A2350;--link:#8FB1E8;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#050F20;--panel:#0C1A30;--ink:#EEF2F8;--muted:#9AA8BD;--line:#22324D;--navy:#0A2350;--link:#8FB1E8;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+a{color:var(--link);text-underline-offset:3px}
+a:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:4px}
+.band{background:var(--navy);color:var(--on-navy)}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:20px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px}
+.brand{display:flex;align-items:center;gap:12px;color:var(--on-navy);text-decoration:none;font-family:var(--display);font-weight:800;font-size:20px}
+.brand svg{width:40px;height:40px}
+.nav{display:flex;gap:18px;flex-wrap:wrap}
+.nav a{color:var(--on-navy-muted);text-decoration:none;font-weight:600;font-size:15px}
+.nav a:hover,.nav a[aria-current]{color:var(--on-navy)}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding-block:40px 64px}
+.hero>*{min-width:0}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+h1.big{font-family:var(--display);font-weight:800;font-size:clamp(64px,12vw,128px);line-height:.9;letter-spacing:-.04em;margin:10px 0 0}
+h1.big span{display:block;color:var(--gold);font-size:.38em;letter-spacing:-.01em;margin-top:8px}
+.lede{color:var(--on-navy-muted);font-size:19px;max-width:34ch;margin:22px 0 26px}
+.badge{display:inline-flex;align-items:center;gap:10px;border:1.5px solid var(--gold);color:var(--on-navy);border-radius:12px;padding:12px 18px;font-weight:700}
+.card{background:#fff;color:#0B1A33;border-radius:18px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.card .h{display:flex;justify-content:space-between;font-size:13px;color:#55657C;margin-bottom:8px}
+.card table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;border-top:2px solid #041E42}
+.card th{font-size:12px;color:#55657C;font-weight:700;padding:8px 4px;text-align:center}
+.card th:first-child,.card td:first-child{text-align:left}
+.card td{padding:10px 4px;border-top:1px solid #D9E1EC;text-align:center;font-weight:800;font-size:26px;color:#2F7A4A}
+.card td small{display:block;font-size:11px;color:#1E407C;font-weight:700}
+.card td:first-child{font-size:16px;color:#0B1A33}
+.card td.mid{color:#9A6200}
+.card .note{font-size:12px;color:#55657C;margin-top:8px}
+main{padding-block:56px}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+.features>div{min-width:0;border-top:3px solid var(--gold);padding-top:16px}
+h2{font-family:var(--display);font-weight:800;font-size:28px;line-height:1.15;letter-spacing:-.01em;margin:0 0 10px;text-wrap:balance}
+h3{font-family:var(--display);font-weight:800;font-size:20px;margin:0 0 6px}
+.muted{color:var(--muted)}
+.formula{margin-top:48px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+.formula code{font-family:var(--mono);font-size:15px;display:block;overflow-x:auto;white-space:nowrap;padding:12px 0}
+.doc{max-width:720px}
+.doc h1{font-family:var(--display);font-weight:800;font-size:clamp(36px,6vw,52px);letter-spacing:-.02em;line-height:1.05;margin:0}
+.doc h2{font-size:22px;margin-top:36px}
+.doc p,.doc li{max-width:66ch}
+.doc .meta{color:var(--muted);font-size:15px;margin-top:10px}
+.callout{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:14px 16px}
+.email{font-family:var(--mono);font-size:16px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;user-select:all;overflow-wrap:anywhere}
+details{border-top:1px solid var(--line);padding-block:14px}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:700;font-size:18px}
+footer{border-top:1px solid var(--line);padding-block:28px;color:var(--muted);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between}
+@media (max-width:480px){.top{gap:10px}.brand{font-size:17px;gap:8px}.brand svg{width:32px;height:32px}.nav{gap:12px}.nav a{font-size:14px}}
+@media (max-width:760px){.hero{grid-template-columns:1fr;padding-block:24px 48px}.features{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.card{animation:rise .6s ease-out both}@keyframes rise{from{transform:translateY(12px)}to{transform:none}}}
+</style></head>
+<body>
+<div class="band"><div class="wrap"><header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="230" fill="#041E42"/><rect x="70" y="70" width="884" height="884" rx="190" fill="none" stroke="#C9A44C" stroke-width="26"/><path d="M262 330h104l64 268 72-268h96l72 268 64-268h104L702 760H598l-86-292-86 292H322z" fill="#fff"/><circle cx="512" cy="250" r="58" fill="#C9A44C"/></svg>WedgeWise</a><nav class="nav" aria-label="Site"><a href="index.html">Home</a><a href="privacy.html" aria-current="page">Privacy</a><a href="support.html">Support</a></nav></header><div style="padding-block:20px 36px"></div></div></div>
+<main><div class="wrap"><article class="doc">
+<h1>Privacy Policy</h1>
+<p class="meta">Effective October 13, 2026. This policy covers the WedgeWise app for iPhone and this website, operated by WedgeWise LLC.</p>
+<div class="callout"><strong>The short version.</strong> WedgeWise collects what it needs to build your yardages and nothing more. We don't sell your data, show ads, or track you across other apps and websites. You can delete your account and everything in it from inside the app.</div>
+
+<h2>What we collect</h2>
+<ul>
+<li><strong>Your golf data.</strong> Your name, optional handicap and playing level, units, clubs and lofts, swing system, and the shots you log (club, swing, carry, distance to the flag, uphill or downhill, wet ball, temperature, elevation and date).</li>
+<li><strong>Your account.</strong> If you sign in with Apple, we receive an anonymous account ID from Apple, and your name and email only if you choose to share them. Apple lets you hide your real email; we then get a private relay address.</li>
+<li><strong>Swing Check videos.</strong> Videos you record or choose for Swing Check, and how you trimmed them.</li>
+<li><strong>Purchases.</strong> Whether you have WedgeWise Pro and when it renews. Apple handles payment; we never see or store your card details.</li>
+<li><strong>Basic app diagnostics.</strong> Crash reports and error logs that help us fix problems. These don't include your shots or videos.</li>
+</ul>
+
+<h2>Location</h2>
+<p>When you tap the location button to fill in today's conditions, the app reads your approximate location once and sends the coordinates to Open-Meteo, a weather service, to get the current temperature and ground elevation. We don't store your location, track it in the background, or use it for anything else. You can always type the conditions in instead, and you can turn location off for WedgeWise in your iPhone's Settings.</p>
+
+<h2>Camera and photos</h2>
+<p>WedgeWise asks for the camera or your photo library only when you add a Swing Check video. It saves a copy of the clips you pick. It doesn't look at the rest of your library.</p>
+
+<h2>How we use it</h2>
+<ul>
+<li>To build your baseline numbers and today's adjusted numbers.</li>
+<li>To back up your shots and videos so they survive a new phone.</li>
+<li>To unlock Pro features you've paid for.</li>
+<li>To answer you when you contact support, and to fix bugs.</li>
+</ul>
+<p>We don't sell or rent your personal information, and we don't use it for advertising.</p>
+
+<h2>Who we share it with</h2>
+<p>Only the service providers that run WedgeWise, and only for that purpose:</p>
+<ul>
+<li><strong>Apple</strong> for Sign in with Apple, payments and app distribution.</li>
+<li><strong>Supabase</strong> to store your account, shots and videos.</li>
+<li><strong>RevenueCat</strong> to manage your Pro subscription status.</li>
+<li><strong>Open-Meteo</strong> to look up weather when you use the location button.</li>
+</ul>
+<p>We may also share information if the law requires it, or to protect the safety of our users.</p>
+
+<h2>How long we keep it</h2>
+<p>We keep your data while you have an account. If you delete your account, we delete your shots, videos and profile from our systems within 30 days, except where the law requires us to keep a record (for example, of purchases).</p>
+
+<h2>Deleting your data</h2>
+<p>In the app, open Settings and tap <strong>Delete account</strong>. That removes your account and everything in it. To cancel a Pro subscription, use your iPhone's Settings › your name › Subscriptions; deleting the app or your account doesn't cancel it by itself.</p>
+<p>You can also email us at <span class="email">wedgewisegolf@gmail.com</span> to ask for a copy of your data or to have it deleted.</p>
+
+<h2>Security</h2>
+<p>Data is encrypted in transit and stored with providers that encrypt it at rest. No system is perfectly secure, but we limit who can access your data and keep only what we need.</p>
+
+<h2>Children</h2>
+<p>WedgeWise is built for golfers age 13 and older. We don't knowingly collect personal information from children under 13. If you believe a child under 13 has given us information, contact us and we'll delete it.</p>
+
+<h2>Your rights</h2>
+<p>Depending on where you live, you may have the right to see, correct, export or delete your personal information, or to object to how it's used. Email us and we'll respond within 30 days.</p>
+
+<h2>Changes to this policy</h2>
+<p>If we change this policy in a way that matters, we'll update the date at the top and tell you in the app.</p>
+
+<h2>Contact</h2>
+<p>WedgeWise LLC<br>Email: <span class="email">wedgewisegolf@gmail.com</span></p>
+</article></div></main>
+<footer><div class="wrap"><span>© 2026 WedgeWise LLC</span><span><a href="privacy.html">Privacy</a> · <a href="support.html">Support</a></span></div></footer>
+</body></html>
