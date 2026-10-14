@@ -7,7 +7,7 @@
   const SUPPORT = "wedgewisegolf@gmail.com";
   /* Stripe Payment Link for "WedgeWise Teams, $499 a year". Empty = card payment not switched on yet (invoice only).
      The team's id rides along as client_reference_id, so the stripe-webhook function knows which team to switch on. */
-  const PAY_LINK = "";
+  const PAY_LINK = "https://buy.stripe.com/test_14A28s75Z7il09x2UF7ok00";
   const justPaid = /[?&]paid=1/.test(location.search);
   let paidChecks = 0;
   const sb = window.supabase.createClient(URL, KEY, { auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true } });
