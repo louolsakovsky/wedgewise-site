@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>WedgeWise Coach</title>
+<meta name="description" content="WedgeWise builds your personal wedge yardages for every club and swing, adjusted for today's temperature and elevation.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one centered column, navy header band, white page, gold used only for rules and marks. */
+:root{
+  --navy:#041E42; --blue:#1E407C; --gold:#C9A44C;
+  --bg:#FFFFFF; --panel:#F4F7FB; --ink:#0B1A33; --muted:#55657C; --line:#D9E1EC;
+  --on-navy:#FFFFFF; --on-navy-muted:#B9C8E2; --link:#1E407C;
+  --display:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --body:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#050F20;--panel:#0C1A30;--ink:#EEF2F8;--muted:#9AA8BD;--line:#22324D;--navy:#0A2350;--link:#8FB1E8;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#050F20;--panel:#0C1A30;--ink:#EEF2F8;--muted:#9AA8BD;--line:#22324D;--navy:#0A2350;--link:#8FB1E8;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+a{color:var(--link);text-underline-offset:3px}
+a:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:4px}
+.band{background:var(--navy);color:var(--on-navy)}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:20px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px}
+.brand{display:flex;align-items:center;gap:12px;color:var(--on-navy);text-decoration:none;font-family:var(--display);font-weight:800;font-size:20px}
+.brand svg{width:40px;height:40px}
+.nav{display:flex;gap:18px;flex-wrap:wrap}
+.nav a{color:var(--on-navy-muted);text-decoration:none;font-weight:600;font-size:15px}
+.nav a:hover,.nav a[aria-current]{color:var(--on-navy)}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding-block:40px 64px}
+.hero>*{min-width:0}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+h1.big{font-family:var(--display);font-weight:800;font-size:clamp(64px,12vw,128px);line-height:.9;letter-spacing:-.04em;margin:10px 0 0}
+h1.big span{display:block;color:var(--gold);font-size:.38em;letter-spacing:-.01em;margin-top:8px}
+.lede{color:var(--on-navy-muted);font-size:19px;max-width:34ch;margin:22px 0 26px}
+.badge{display:inline-flex;align-items:center;gap:10px;border:1.5px solid var(--gold);color:var(--on-navy);border-radius:12px;padding:12px 18px;font-weight:700}
+.card{background:#fff;color:#0B1A33;border-radius:18px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.card .h{display:flex;justify-content:space-between;font-size:13px;color:#55657C;margin-bottom:8px}
+.card table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;border-top:2px solid #041E42}
+.card th{font-size:12px;color:#55657C;font-weight:700;padding:8px 4px;text-align:center}
+.card th:first-child,.card td:first-child{text-align:left}
+.card td{padding:10px 4px;border-top:1px solid #D9E1EC;text-align:center;font-weight:800;font-size:26px;color:#2F7A4A}
+.card td small{display:block;font-size:11px;color:#1E407C;font-weight:700}
+.card td:first-child{font-size:16px;color:#0B1A33}
+.card td.mid{color:#9A6200}
+.card .note{font-size:12px;color:#55657C;margin-top:8px}
+main{padding-block:56px}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+.features>div{min-width:0;border-top:3px solid var(--gold);padding-top:16px}
+h2{font-family:var(--display);font-weight:800;font-size:28px;line-height:1.15;letter-spacing:-.01em;margin:0 0 10px;text-wrap:balance}
+h3{font-family:var(--display);font-weight:800;font-size:20px;margin:0 0 6px}
+.muted{color:var(--muted)}
+.formula{margin-top:48px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+.formula code{font-family:var(--mono);font-size:15px;display:block;overflow-x:auto;white-space:nowrap;padding:12px 0}
+.doc{max-width:720px}
+.doc h1{font-family:var(--display);font-weight:800;font-size:clamp(36px,6vw,52px);letter-spacing:-.02em;line-height:1.05;margin:0}
+.doc h2{font-size:22px;margin-top:36px}
+.doc p,.doc li{max-width:66ch}
+.doc .meta{color:var(--muted);font-size:15px;margin-top:10px}
+.callout{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:14px 16px}
+.email{font-family:var(--mono);font-size:16px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;user-select:all;overflow-wrap:anywhere}
+details{border-top:1px solid var(--line);padding-block:14px}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:700;font-size:18px}
+footer{border-top:1px solid var(--line);padding-block:28px;color:var(--muted);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between}
+
+/* Teams + coach pages */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;counter-reset:s}
+.steps>div{min-width:0;border-top:3px solid var(--gold);padding-top:16px}
+.steps b.n{display:inline-flex;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold);align-items:center;justify-content:center;font-size:14px;margin-bottom:8px}
+.price{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin:6px 0 24px}
+.price strong{font-family:var(--display);font-size:56px;font-weight:800;letter-spacing:-.02em;color:var(--on-navy);font-variant-numeric:tabular-nums}
+.price span{color:var(--on-navy-muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 24px;border-radius:12px;background:var(--gold);color:#041E42;font-weight:800;text-decoration:none;border:0;font:inherit;font-weight:800;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+.band .btn.ghost{color:var(--on-navy);border-color:var(--on-navy-muted)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:22px}
+.field{display:block;margin-bottom:14px}
+.field span{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.field input{width:100%;min-height:50px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;padding:0 14px}
+.field input:focus{outline:2px solid var(--gold);border-color:transparent}
+.pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;border:1.5px solid var(--line)}
+.pill.on{border-color:#2F7A4A;color:#2F7A4A}.pill.wait{border-color:var(--gold);color:#9A6200}
+.code{font-family:var(--mono);font-size:34px;letter-spacing:.18em;font-weight:500}
+table.roster{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+table.roster th{font-size:13px;color:var(--muted);text-align:left;padding:8px 6px;border-bottom:2px solid var(--ink)}
+table.roster td{padding:12px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+table.roster tr.player{cursor:pointer}
+table.roster tr.player:hover td{background:var(--panel)}
+.mx{border-collapse:collapse;margin:6px 0 4px;font-variant-numeric:tabular-nums}
+.mx th{font-size:12px;color:var(--muted);padding:4px 10px;text-align:center}
+.mx td{padding:6px 10px;text-align:center;font-weight:800;font-size:20px}
+.mx td:first-child{text-align:left;font-size:15px}
+.lo{color:#B42318}.midc{color:#9A6200}.hi{color:#2F7A4A}
+.err{color:#B42318;font-weight:700}.ok{color:#2F7A4A;font-weight:700}
+.scroll{overflow-x:auto}
+@media (max-width:760px){.steps{grid-template-columns:1fr}.hide-sm{display:none}}
+@media (max-width:480px){.top{gap:10px}.brand{font-size:17px;gap:8px}.brand svg{width:32px;height:32px}.nav{gap:12px}.nav a{font-size:14px}}
+@media (max-width:760px){.hero{grid-template-columns:1fr;padding-block:24px 48px}.features{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.card{animation:rise .6s ease-out both}@keyframes rise{from{transform:translateY(12px)}to{transform:none}}}
+</style></head>
+<body>
+<div class="band"><div class="wrap"><header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="230" fill="#041E42"/><rect x="70" y="70" width="884" height="884" rx="190" fill="none" stroke="#C9A44C" stroke-width="26"/><path d="M262 330h104l64 268 72-268h96l72 268 64-268h104L702 760H598l-86-292-86 292H322z" fill="#fff"/><circle cx="512" cy="250" r="58" fill="#C9A44C"/></svg>WedgeWise</a><nav class="nav" aria-label="Site"><a href="index.html">Home</a><a href="teams.html" aria-current="page">Teams</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav></header><section style="padding-block:20px 36px"><div class="kicker">WedgeWise Teams</div><h1 class="big" style="font-size:clamp(40px,7vw,64px);line-height:1">Coach page</h1></section></div></div>
+<main><div class="wrap"><div id="app" aria-live="polite"><p class="muted">Loading…</p></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="coach.js"></script></div></main>
+<footer><div class="wrap"><span>© 2026 WedgeWise LLC</span><span><a href="privacy.html">Privacy</a> · <a href="support.html">Support</a></span></div></footer>
+</body></html>
