@@ -5,6 +5,11 @@
   const URL = "https://hayymoyocfbjoaifgrnf.supabase.co";
   const KEY = "sb_publishable_VitLrXAoU4154mNLQxWf1g_GxGU8ON0";
   const SUPPORT = "wedgewisegolf@gmail.com";
+  /* Stripe Payment Link for "WedgeWise Teams, $499 a year". Empty = card payment not switched on yet (invoice only).
+     The team's id rides along as client_reference_id, so the stripe-webhook function knows which team to switch on. */
+  const PAY_LINK = "";
+  const justPaid = /[?&]paid=1/.test(location.search);
+  let paidChecks = 0;
   const sb = window.supabase.createClient(URL, KEY, { auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true } });
   const app = document.getElementById("app");
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -85,11 +90,24 @@
   async function team(session, t) {
     title("Coaching Dashboard");
     const active = t.status === "active";
+    /* Back from Stripe: the team switches on a few seconds later, so check again until it does. */
+    if (justPaid && !active && paidChecks < 15) { paidChecks++; setTimeout(render, 4000); }
+    const invoiceHref = `mailto:${SUPPORT}?subject=${encodeURIComponent("WedgeWise Teams invoice: " + t.school)}&body=${encodeURIComponent("Team: " + t.name + "\nSchool: " + t.school + "\nTeam code: " + t.code + "\nPlayers: up to 12 (tell us if you need more)\nPlease send an invoice for $499.")}`;
+    const payHref = PAY_LINK ? PAY_LINK + "?client_reference_id=" + encodeURIComponent(t.id) + "&prefilled_email=" + encodeURIComponent(session.user.email || "") : "";
+    const until = t.paid_until ? new Date(t.paid_until + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
+    const payBox = active ? (until ? `<p class="muted" style="font-size:14px;margin:12px 0 0">Active through ${esc(until)}.${t.stripe_subscription ? " It renews automatically each year." : ""}</p>` : "")
+      : justPaid && t.status !== "ended" ? `<div class="callout" style="margin-top:16px"><b>Payment received, thank you.</b> Your team switches on in a few seconds. This page updates by itself.</div>`
+      : `<div class="callout" style="margin-top:16px"><b>${t.status === "ended" ? "Your team’s year has ended." : "Switch your team on."}</b> ${t.status === "ended" ? "Renew to switch it back on for your players." : "Players can join as soon as your team is on."}
+          ${payHref ? `<div class="row" style="margin-top:14px"><a class="btn" href="${esc(payHref)}">Pay $499 by card</a><a class="btn ghost" href="${invoiceHref}">Get an invoice instead</a></div>
+          <p class="muted" style="font-size:14px;margin:10px 0 0">$499 a year for up to 12 players. Need more than 12? Get an invoice and tell us how many.</p>`
+          : `<p style="margin:10px 0 0"><a href="${invoiceHref}">Email us for an invoice</a> and we’ll switch the team on as soon as it’s paid.</p>`}</div>`;
     const [{ data: invites }, { data: roster }] = await Promise.all([
       sb.from("team_invites").select("email,created_at,sent_at").eq("team_id", t.id).order("created_at"),
       sb.rpc("coach_roster"),
     ]);
     const players = roster || [], inv = invites || [];
+    /* Players added before the team was switched on get their emails the first time the coach opens the dashboard after. */
+    if (active && !autoSent && inv.some(x => !x.sent_at)) { autoSent = true; await sendInvites(); return render(); }
     const msg = `Join ${t.name} on WedgeWise. Download WedgeWise from the App Store, sign in with Apple, then open Settings (the gear on Home) → Join a team, and enter code ${t.code}.`;
     const rows = players.map((p, i) => {
       const st = p.state || {}, shots = st.shots || [];
@@ -107,7 +125,7 @@
           <div><h2 style="margin:0">${esc(t.name)}</h2><div class="muted">${esc(t.school)}</div></div>
           <span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span>
         </div>
-        ${active ? "" : `<div class="callout" style="margin-top:16px"><b>Switch your team on.</b> Card payment is coming soon. For now, <a href="mailto:${SUPPORT}?subject=${encodeURIComponent("WedgeWise Teams: " + t.school)}&body=${encodeURIComponent("Team: " + t.name + "\nSchool: " + t.school + "\nPlayers: up to 12\nPlease send an invoice for $499.")}">email us for an invoice</a> and we’ll switch the team on as soon as it’s paid. Players can’t join until then.</div>`}
+        ${payBox}
       </div>
       <div class="panel">
         <h3>Team code</h3>
@@ -118,8 +136,9 @@
         <h3>Players to invite</h3>
         <form id="add" class="row"><label class="field" style="flex:1;min-width:220px;margin:0"><span class="sr" style="position:absolute;left:-9999px">Player email</span><input id="pe" type="email" required placeholder="player@school.edu"></label><button class="btn" type="submit">Add</button></form>
         <p id="am" class="err"></p>
-        ${inv.length ? `<ul style="padding-left:18px">${inv.map(x => `<li>${esc(x.email)} <a href="#" data-rm="${esc(x.email)}" style="font-size:14px">Remove</a></li>`).join("")}</ul>` : `<p class="muted">No players added yet.</p>`}
-        <p class="muted" style="font-size:14px;margin-bottom:0">Automatic invite emails are coming soon. Until then, use “Copy invite message” above and send it to your players.</p>
+        ${inv.length ? `<ul style="padding-left:18px">${inv.map(x => `<li>${esc(x.email)} <span class="muted" style="font-size:14px">· ${x.sent_at ? "Invited " + ago(x.sent_at).replace(/^(Today|Yesterday)$/, m => m.toLowerCase()) : active ? "Not sent yet" : "Sends once your team is on"}</span>
+          ${active ? `<a href="#" data-send="${esc(x.email)}" style="font-size:14px">${x.sent_at ? "Resend" : "Send"}</a> ·` : ""} <a href="#" data-rm="${esc(x.email)}" style="font-size:14px">Remove</a></li>`).join("")}</ul>` : `<p class="muted">No players added yet.</p>`}
+        <p id="im" class="muted" style="font-size:14px;margin-bottom:0">${active ? "Each player you add gets an email with your team code and how to join." : "Add your players now. They’ll get an email with your team code as soon as your team is on."} You can also use “Copy invite message” above.</p>
       </div>
       <div class="panel">
         <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0">Roster</h3><button class="btn ghost" id="rf" type="button">Refresh</button></div>
@@ -130,6 +149,7 @@
       </div>
       <p class="muted" style="font-size:14px">Signed in as ${esc(session.user.email)} · <a href="#" id="out">Sign out</a></p>`);
     document.getElementById("out").onclick = e => { e.preventDefault(); sb.auth.signOut(); };
+    if (inviteNote) { const im = document.getElementById("im"); im.className = "err"; im.textContent = inviteNote; inviteNote = ""; }
     shownAt = Date.now();
     document.getElementById("rf").onclick = async () => { const b = document.getElementById("rf"); b.textContent = "Refreshing…"; b.disabled = true; await render(); };
     document.getElementById("cp").onclick = async () => { try { await navigator.clipboard.writeText(msg); document.getElementById("cp").textContent = "Copied"; } catch { prompt("Copy this message:", msg); } };
@@ -139,13 +159,27 @@
       if (inv.length >= t.seats * 2) { document.getElementById("am").textContent = "That’s a lot of invites. Remove some first."; return; }
       const { error } = await sb.from("team_invites").insert({ team_id: t.id, email });
       if (error) { document.getElementById("am").textContent = /duplicate/i.test(error.message) ? "That player is already on the list." : "Couldn’t add that email. Check it and try again."; return; }
+      if (active) await sendInvites(email);
       render();
     };
+    app.querySelectorAll("[data-send]").forEach(a => a.onclick = async e => { e.preventDefault(); a.textContent = "Sending…"; await sendInvites(a.dataset.send); render(); });
     app.querySelectorAll("[data-rm]").forEach(a => a.onclick = async e => { e.preventDefault(); await sb.from("team_invites").delete().eq("team_id", t.id).eq("email", a.dataset.rm); render(); });
     app.querySelectorAll("tr.player").forEach(tr => {
       const toggle = () => { const d = document.getElementById("d" + tr.dataset.i); d.hidden = !d.hidden; tr.setAttribute("aria-expanded", String(!d.hidden)); if (d.hidden) open.delete(tr.dataset.u); else open.add(tr.dataset.u); };
       tr.onclick = toggle; tr.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } };
     });
+  }
+
+  /* Email invites through the send-invites function. A problem shows once, then the dashboard re-renders. */
+  let inviteNote = "", autoSent = false;
+  async function sendInvites(email) {
+    try {
+      const { data, error } = await sb.functions.invoke("send-invites", { body: email ? { email } : {} });
+      if (error) throw error;
+      inviteNote = data && data.failed && data.failed.length ? "Couldn’t email " + data.failed.join(", ") + ". Check the address, or use Copy invite message." : "";
+    } catch {
+      inviteNote = "Invite emails aren’t working right now. Use “Copy invite message” and send it yourself.";
+    }
   }
 
   function matrix(st) {
