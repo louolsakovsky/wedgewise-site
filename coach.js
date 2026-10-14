@@ -86,7 +86,7 @@
       const nm = numbers(st); let locked = 0;
       nm.clubs.forEach(c => nm.swings.forEach(w => { const x = nm.cell(c.id, w.k); if (x && x.n >= 5) locked++; }));
       const isOpen = open.has(p.user_id);
-      return `<tr class="player" data-i="${i}" data-u="${esc(p.user_id)}" tabindex="0" aria-expanded="${isOpen}"><td><b>${esc(p.name || (st.profile && st.profile.name) || "Player")}</b><br><span class="muted" style="font-size:13px">Joined ${ago(p.joined_at)}</span></td>
+      return `<tr class="player" data-i="${i}" data-u="${esc(p.user_id)}" tabindex="0" aria-expanded="${isOpen}"><td><b>${esc((st.profile && st.profile.name) || p.name || "Player")}</b><br><span class="muted" style="font-size:13px">Joined ${ago(p.joined_at)}</span></td>
         <td>${ago(p.last_active)}</td><td>${week}</td><td class="hide-sm">${shots.length}</td><td class="hide-sm">${locked}</td></tr>
         <tr class="detail" id="d${i}"${isOpen ? "" : " hidden"}><td colspan="5">${matrix(st)}</td></tr>`;
     }).join("");
