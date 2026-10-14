@@ -69,6 +69,9 @@
     };
   }
 
+  /* Players whose numbers are open stay open when the page refreshes. */
+  const open = new Set();
+  let shownAt = 0;
   async function team(session, t) {
     const active = t.status === "active";
     const [{ data: invites }, { data: roster }] = await Promise.all([
@@ -82,9 +85,10 @@
       const week = shots.filter(x => Date.parse(x.date) > Date.now() - 7 * 864e5).length;
       const nm = numbers(st); let locked = 0;
       nm.clubs.forEach(c => nm.swings.forEach(w => { const x = nm.cell(c.id, w.k); if (x && x.n >= 5) locked++; }));
-      return `<tr class="player" data-i="${i}" tabindex="0" aria-expanded="false"><td><b>${esc(p.name || (st.profile && st.profile.name) || "Player")}</b><br><span class="muted" style="font-size:13px">Joined ${ago(p.joined_at)}</span></td>
+      const isOpen = open.has(p.user_id);
+      return `<tr class="player" data-i="${i}" data-u="${esc(p.user_id)}" tabindex="0" aria-expanded="${isOpen}"><td><b>${esc(p.name || (st.profile && st.profile.name) || "Player")}</b><br><span class="muted" style="font-size:13px">Joined ${ago(p.joined_at)}</span></td>
         <td>${ago(p.last_active)}</td><td>${week}</td><td class="hide-sm">${shots.length}</td><td class="hide-sm">${locked}</td></tr>
-        <tr class="detail" id="d${i}" hidden><td colspan="5">${matrix(st)}</td></tr>`;
+        <tr class="detail" id="d${i}"${isOpen ? "" : " hidden"}><td colspan="5">${matrix(st)}</td></tr>`;
     }).join("");
     html(`
       <div class="panel">
@@ -107,13 +111,16 @@
         <p class="muted" style="font-size:14px;margin-bottom:0">Automatic invite emails are coming soon. Until then, use “Copy invite message” above and send it to your players.</p>
       </div>
       <div class="panel">
-        <h3>Roster</h3>
+        <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0">Roster</h3><button class="btn ghost" id="rf" type="button">Refresh</button></div>
+        <p class="muted" id="upd" style="font-size:13px;margin-top:0">Updated just now. Updates every minute.</p>
         ${players.length ? `<div class="scroll"><table class="roster"><thead><tr><th>Player</th><th>Last active</th><th>Shots this week</th><th class="hide-sm">Total shots</th><th class="hide-sm">Numbers locked in</th></tr></thead><tbody>${rows}</tbody></table></div>
           <p class="muted" style="font-size:14px">Tap a player to see their numbers. Colors show how many shots each number is built on: red 0–1, yellow 2–4, green 5+.</p>`
         : `<p class="muted">No players have joined yet.</p>`}
       </div>
       <p class="muted" style="font-size:14px">Signed in as ${esc(session.user.email)} · <a href="#" id="out">Sign out</a></p>`);
     document.getElementById("out").onclick = e => { e.preventDefault(); sb.auth.signOut(); };
+    shownAt = Date.now();
+    document.getElementById("rf").onclick = async () => { const b = document.getElementById("rf"); b.textContent = "Refreshing…"; b.disabled = true; await render(); };
     document.getElementById("cp").onclick = async () => { try { await navigator.clipboard.writeText(msg); document.getElementById("cp").textContent = "Copied"; } catch { prompt("Copy this message:", msg); } };
     document.getElementById("add").onsubmit = async e => {
       e.preventDefault();
@@ -125,7 +132,7 @@
     };
     app.querySelectorAll("[data-rm]").forEach(a => a.onclick = async e => { e.preventDefault(); await sb.from("team_invites").delete().eq("team_id", t.id).eq("email", a.dataset.rm); render(); });
     app.querySelectorAll("tr.player").forEach(tr => {
-      const toggle = () => { const d = document.getElementById("d" + tr.dataset.i); d.hidden = !d.hidden; tr.setAttribute("aria-expanded", String(!d.hidden)); };
+      const toggle = () => { const d = document.getElementById("d" + tr.dataset.i); d.hidden = !d.hidden; tr.setAttribute("aria-expanded", String(!d.hidden)); if (d.hidden) open.delete(tr.dataset.u); else open.add(tr.dataset.u); };
       tr.onclick = toggle; tr.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } };
     });
   }
@@ -147,6 +154,17 @@
     if (!teams || !teams.length) return create(session);
     return team(session, teams[0]);
   }
+  /* Keep the roster current: every minute while the page is on screen, and when the coach comes back to it.
+     Skipped while the coach is typing an email so nothing they type is lost. */
+  const quietRefresh = () => {
+    if (document.hidden || !document.getElementById("rf")) return;
+    const pe = document.getElementById("pe");
+    if (pe && (pe.value || document.activeElement === pe)) return;
+    render();
+  };
+  setInterval(quietRefresh, 60000);
+  setInterval(() => { const u = document.getElementById("upd"); if (u && shownAt) { const m = Math.floor((Date.now() - shownAt) / 60000); u.textContent = (m < 1 ? "Updated just now" : "Updated " + m + " min ago") + ". Updates every minute."; } }, 15000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - shownAt > 10000) quietRefresh(); });
   sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_IN" || ev === "SIGNED_OUT") render(); });
   render();
 })();
