@@ -13,7 +13,18 @@
   const sb = window.supabase.createClient(URL, KEY, { auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true } });
   const app = document.getElementById("app");
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const html = (h) => { app.innerHTML = h; };
+  /* What a coach types is kept: across page refreshes, and if the iPhone reloads the page after they switch apps. */
+  const DRAFT = "ww.coach.draft";
+  const readDraft = () => { try { return JSON.parse(localStorage.getItem(DRAFT) || "{}"); } catch { return {}; } };
+  const saveDraft = d => { try { localStorage.setItem(DRAFT, JSON.stringify(d)); } catch {} };
+  const clearDraft = (...ids) => { const d = readDraft(); ids.forEach(i => delete d[i]); saveDraft(d); };
+  app.addEventListener("input", e => { const t = e.target; if (t && t.id && t.tagName === "INPUT") { const d = readDraft(); d[t.id] = t.value; saveDraft(d); } });
+  const typing = () => [...app.querySelectorAll("input")].some(i => i.value || document.activeElement === i);
+  const html = (h) => {
+    const d = readDraft();
+    app.innerHTML = h;
+    app.querySelectorAll("input[id]").forEach(i => { if (!i.value && d[i.id]) i.value = d[i.id]; });
+  };
 
   /* ---- the same math as the app: normalize to 75°F at sea level, then the median ---- */
   const factor = (t, e) => (1 + 0.010 * (t - 75) / 10) * (1 + 0.011 * e / 1000);
@@ -58,7 +69,7 @@
       const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + "/coach.html" } });
       const m = document.getElementById("m");
       if (error) { m.className = "err"; m.textContent = "That didn’t send. Check the email address and try again in a minute." + (error.message ? " (" + error.message + ")" : ""); return; }
-      m.className = "ok"; m.textContent = "Check your email for the link.";
+      m.className = "ok"; m.textContent = "Check your email for the link."; clearDraft("em");
     };
   }
 
@@ -80,8 +91,19 @@
       const row = { name: document.getElementById("tn").value.trim(), school: document.getElementById("sc").value.trim(), coach_name: document.getElementById("cn").value.trim() || null, coach_id: session.user.id, coach_email: session.user.email };
       const { error } = await sb.from("teams").insert(row);
       if (error) { document.getElementById("m").textContent = "Couldn’t create the team. Try again."; return; }
+      clearDraft("tn", "sc", "cn");
       render();
     };
+  }
+
+  /* Back from Stripe: check quietly every few seconds and only redraw the page once the team is on. */
+  let pollTimer = null;
+  async function pollPaid() {
+    pollTimer = null; paidChecks++;
+    const { data } = await sb.from("teams").select("status").limit(1);
+    if (data && data[0] && data[0].status === "active") return render();
+    if (paidChecks < 30) pollTimer = setTimeout(pollPaid, 4000);
+    else { const c = document.querySelector(".callout"); if (c) c.innerHTML = "<b>Payment received.</b> Switching your team on is taking longer than usual. Refresh this page in a minute, or email " + SUPPORT + " and we’ll switch it on."; }
   }
 
   /* Players whose numbers are open stay open when the page refreshes. */
@@ -91,7 +113,7 @@
     title("Coaching Dashboard");
     const active = t.status === "active";
     /* Back from Stripe: the team switches on a few seconds later, so check again until it does. */
-    if (justPaid && !active && paidChecks < 15) { paidChecks++; setTimeout(render, 4000); }
+    if (justPaid && !active && paidChecks < 30 && !pollTimer) pollTimer = setTimeout(pollPaid, 4000);
     const invoiceHref = `mailto:${SUPPORT}?subject=${encodeURIComponent("WedgeWise Teams invoice: " + t.school)}&body=${encodeURIComponent("Team: " + t.name + "\nSchool: " + t.school + "\nTeam code: " + t.code + "\nPlayers: up to 12 (tell us if you need more)\nPlease send an invoice for $499.")}`;
     const payHref = PAY_LINK ? PAY_LINK + "?client_reference_id=" + encodeURIComponent(t.id) + "&prefilled_email=" + encodeURIComponent(session.user.email || "") : "";
     const until = t.paid_until ? new Date(t.paid_until + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
@@ -159,6 +181,7 @@
       if (inv.length >= t.seats * 2) { document.getElementById("am").textContent = "That’s a lot of invites. Remove some first."; return; }
       const { error } = await sb.from("team_invites").insert({ team_id: t.id, email });
       if (error) { document.getElementById("am").textContent = /duplicate/i.test(error.message) ? "That player is already on the list." : "Couldn’t add that email. Check it and try again."; return; }
+      clearDraft("pe");
       if (active) await sendInvites(email);
       render();
     };
@@ -205,6 +228,7 @@
     if (document.hidden || !document.getElementById("rf")) return;
     const pe = document.getElementById("pe");
     if (pe && (pe.value || document.activeElement === pe)) return;
+    if (typing()) return;
     render();
   };
   setInterval(quietRefresh, 60000);
