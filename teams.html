@@ -44,6 +44,11 @@ h1.big span{display:block;color:var(--gold);font-size:.38em;letter-spacing:-.01e
 .card td small{display:block;font-size:11px;color:#1E407C;font-weight:700}
 .card td:first-child{font-size:16px;color:#0B1A33}
 .card td.mid{color:#9A6200}
+.card.demo td{font-size:16px;font-weight:700;color:#0B1A33}
+.card.demo td.g{color:#2F7A4A;font-weight:800}.card.demo td.y{color:#9A6200;font-weight:800}.card.demo td.r{color:#B42318;font-weight:800}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tabs button{font:inherit;font-weight:700;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:10px 12px;cursor:pointer;min-height:44px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
 .card .note{font-size:12px;color:#55657C;margin-top:8px}
 main{padding-block:56px}
 .features{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
@@ -104,22 +109,54 @@ table.roster tr.player:hover td{background:var(--panel)}
 @media (prefers-reduced-motion:no-preference){.card{animation:rise .6s ease-out both}@keyframes rise{from{transform:translateY(12px)}to{transform:none}}}
 </style></head>
 <body>
-<div class="band"><div class="wrap"><header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="230" fill="#041E42"/><rect x="70" y="70" width="884" height="884" rx="190" fill="none" stroke="#C9A44C" stroke-width="26"/><path d="M262 330h104l64 268 72-268h96l72 268 64-268h104L702 760H598l-86-292-86 292H322z" fill="#fff"/><circle cx="512" cy="250" r="58" fill="#C9A44C"/></svg>WedgeWise</a><nav class="nav" aria-label="Site"><a href="index.html">Home</a><a href="teams.html" aria-current="page">Teams</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav></header><section style="padding-block:28px 56px;max-width:760px">
-  <div class="kicker">For college programs</div>
-  <h1 class="big" style="font-size:clamp(44px,8vw,80px);line-height:1">Every player’s numbers.<span style="font-size:.6em">One team.</span></h1>
-  <p class="lede">Put the whole roster on WedgeWise. Your players build their wedge numbers from their own shots, and you see who’s putting in the work and where everyone’s numbers stand.</p>
-  <div class="price"><strong>$499</strong><span>a year for up to 12 players</span><span>· $39 for each extra player</span></div>
-  <div class="row"><a class="btn" href="coach.html">Start your team</a><a class="btn ghost" href="mailto:wedgewisegolf@gmail.com?subject=WedgeWise%20Teams%20invoice">Need an invoice?</a></div>
+<div class="band"><div class="wrap"><header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="230" fill="#041E42"/><rect x="70" y="70" width="884" height="884" rx="190" fill="none" stroke="#C9A44C" stroke-width="26"/><path d="M262 330h104l64 268 72-268h96l72 268 64-268h104L702 760H598l-86-292-86 292H322z" fill="#fff"/><circle cx="512" cy="250" r="58" fill="#C9A44C"/></svg>WedgeWise</a><nav class="nav" aria-label="Site"><a href="index.html">Home</a><a href="teams.html" aria-current="page">Teams</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav></header><section class="hero">
+  <div>
+    <div class="kicker">WedgeWise for college teams</div>
+    <h1 class="big" style="font-size:clamp(44px,8vw,80px);line-height:1">Every player’s numbers.<span style="font-size:.6em">One team.</span></h1>
+    <p class="lede">Put your whole roster on WedgeWise. Players build their wedge yardages from their own shots, and you see who’s putting in the work and where every number stands, all in one place.</p>
+    <div class="row"><a class="btn" href="coach.html?start=signup">Sign up your team</a><a class="btn ghost" href="coach.html">Coach login</a></div>
+  </div>
+  <div class="card demo" role="img" aria-label="Example coaching dashboard: a roster of players with when they last practiced, shots logged this week and how many numbers are locked in.">
+    <div class="h"><span>Coaching Dashboard · example</span><span>this week</span></div>
+    <table><thead><tr><th>Player</th><th>Last active</th><th>Shots</th><th>Locked in</th></tr></thead>
+    <tbody>
+      <tr><td>Player A</td><td>Today</td><td>64</td><td class="g">11</td></tr>
+      <tr><td>Player B</td><td>Today</td><td>41</td><td class="g">9</td></tr>
+      <tr><td>Player C</td><td>Yesterday</td><td>27</td><td class="y">6</td></tr>
+      <tr><td>Player D</td><td>4 days ago</td><td>8</td><td class="r">2</td></tr>
+    </tbody></table>
+    <div class="note">Tap any player to see their carry numbers for every club and swing.</div>
+  </div>
 </section></div></div>
-<main><div class="wrap"><section class="steps" aria-label="How Teams works">
-  <div><b class="n">1</b><h3>You sign up the team</h3><p class="muted">Create your team here, then add up to 12 players by email. Pay by card, or ask for an invoice if your school pays by purchase order.</p></div>
-  <div><b class="n">2</b><h3>Players join with a code</h3><p class="muted">Each player downloads WedgeWise, signs in with Apple and enters your team code. Pro is included for everyone on the team.</p></div>
-  <div><b class="n">3</b><h3>You see the whole roster</h3><p class="muted">Who’s logging shots, when they last practiced, and each player’s carry numbers for every club and swing.</p></div>
+<main><div class="wrap"><section aria-labelledby="why">
+  <h2 id="why">Why coaches use it</h2>
+  <div class="features" style="margin-top:18px">
+    <div><h3>See who’s practicing</h3><p class="muted">The dashboard shows when each player last logged shots and how many they hit this week. No more guessing who did the work.</p></div>
+    <div><h3>Every number in one place</h3><p class="muted">Open any player to see their carry for each wedge and swing, built from their own shots. Colors show which numbers are trustworthy and which need more reps.</p></div>
+    <div><h3>Fair across conditions</h3><p class="muted">Every shot is normalized to 75°F at sea level, so practice in October and a qualifier in April compare honestly. Players see today’s numbers for wherever they play.</p></div>
+  </div>
 </section>
-<section class="formula">
-  <h2>What players get</h2>
-  <p class="muted">Every Pro feature: their full scoring bag (LW through 9 iron), today’s numbers adjusted for temperature and elevation, a custom swing system, and Swing Check video with line drawing.</p>
-  <p class="muted">Already coach a team on WedgeWise? <a href="coach.html">Open your coach page</a>.</p>
+
+<section class="steps" aria-label="How Teams works" style="margin-top:56px">
+  <div><b class="n">1</b><h3>Sign up your team</h3><p class="muted">Create your coach account with your email, name your team, and we’ll send an invoice (purchase orders welcome). Card payment is coming soon.</p></div>
+  <div><b class="n">2</b><h3>Players join with a code</h3><p class="muted">Send your players the team code. They download WedgeWise, sign in, and enter the code in Settings. Pro is included for everyone on the team.</p></div>
+  <div><b class="n">3</b><h3>Watch the numbers grow</h3><p class="muted">Log in any time to your Coaching Dashboard to see the roster, activity and each player’s numbers.</p></div>
+</section>
+
+<section class="formula" aria-labelledby="price">
+  <div class="kicker">Pricing</div>
+  <h2 id="price" style="margin-top:6px">$499 a year for up to 12 players</h2>
+  <p class="muted">$39 a year for each extra player. Every player gets full WedgeWise Pro: all five scoring clubs (LW through 9 iron), today’s numbers adjusted for temperature and elevation, a custom swing system, and Swing Check video with line drawing.</p>
+  <div class="row" style="margin-top:16px"><a class="btn" href="coach.html?start=signup">Sign up your team</a><a class="btn ghost" href="mailto:wedgewisegolf@gmail.com?subject=WedgeWise%20Teams%20invoice">Need an invoice?</a></div>
+</section>
+
+<section aria-labelledby="faq" style="margin-top:56px" class="doc">
+  <h2 id="faq">Questions coaches ask</h2>
+  <details><summary>What do my players need?</summary><p>An iPhone with WedgeWise installed. They sign in, enter your team code in Settings, and their Pro features switch on right away.</p></details>
+  <details><summary>Can we pay with a purchase order?</summary><p>Yes. Ask for an invoice and we’ll switch your team on as soon as it’s paid.</p></details>
+  <details><summary>What if we have more than 12 players?</summary><p>Add as many as you need for $39 a year each. Email us and we’ll add the spots.</p></details>
+  <details><summary>What happens when a player leaves the team?</summary><p>Their spot opens up for someone else. The player keeps their shots and numbers in their own account.</p></details>
+  <details><summary>Already set up?</summary><p><a href="coach.html">Log in to your Coaching Dashboard</a>.</p></details>
 </section></div></main>
 <footer><div class="wrap"><span>© 2026 WedgeWise LLC</span><span><a href="privacy.html">Privacy</a> · <a href="support.html">Support</a></span></div></footer>
 </body></html>

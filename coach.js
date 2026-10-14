@@ -30,25 +30,35 @@
   };
 
   /* ---- screens ---- */
+  /* Signed out: "Log in" for coaches who already have a team, "Sign up" for new ones.
+     Both send an email link (no passwords); a new coach goes on to set up their team. */
+  const title = t => { const h = document.getElementById("title"); if (h) h.textContent = t; };
+  let mode = /[?&]start=signup/.test(location.search) ? "signup" : "login";
   function login(msg) {
+    const up = mode === "signup";
+    title(up ? "Sign up your team" : "Coach login");
     html(`<div class="panel" style="max-width:520px">
-      <h2>Sign in</h2>
-      <p class="muted">Enter your email and we’ll send you a sign-in link. No password needed.</p>
+      <div class="tabs" role="tablist"><button type="button" role="tab" id="t-in" aria-selected="${!up}">Log in</button><button type="button" role="tab" id="t-up" aria-selected="${up}">Sign up</button></div>
+      <h2>${up ? "Create your coach account" : "Welcome back, coach"}</h2>
+      <p class="muted">${up ? "Enter your school email and we’ll send you a link. Open it and you’ll set up your team next. No password needed." : "Enter your email and we’ll send you a link to your Coaching Dashboard. No password needed."}</p>
       <form id="f"><label class="field"><span>Email</span><input id="em" type="email" autocomplete="email" required placeholder="coach@school.edu"></label>
-      <button class="btn" type="submit">Email me a sign-in link</button></form>
+      <button class="btn" type="submit">${up ? "Email me a sign-up link" : "Email me a login link"}</button></form>
       <p id="m" class="${msg && msg.ok ? "ok" : "err"}">${esc(msg ? msg.text : "")}</p>
-      <p class="muted" style="font-size:14px">Open the link on this same device. New to WedgeWise Teams? Signing in is how you start.</p></div>`);
+      <p class="muted" style="font-size:14px">Open the link on this same device. ${up ? "" : "New here? Tap Sign up. "}<a href="teams.html">About WedgeWise Teams</a></p></div>`);
+    document.getElementById("t-in").onclick = () => { mode = "login"; login(); };
+    document.getElementById("t-up").onclick = () => { mode = "signup"; login(); };
     document.getElementById("f").onsubmit = async e => {
       e.preventDefault();
       const email = document.getElementById("em").value.trim();
       const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + "/coach.html" } });
       const m = document.getElementById("m");
       if (error) { m.className = "err"; m.textContent = "That didn’t send. Check the email address and try again in a minute."; return; }
-      m.className = "ok"; m.textContent = "Check your email for the sign-in link.";
+      m.className = "ok"; m.textContent = "Check your email for the link.";
     };
   }
 
   function create(session) {
+    title("Set up your team");
     html(`<div class="panel" style="max-width:560px">
       <h2>Set up your team</h2>
       <p class="muted">$499 a year for up to 12 players, then $39 for each extra player.</p>
@@ -73,6 +83,7 @@
   const open = new Set();
   let shownAt = 0;
   async function team(session, t) {
+    title("Coaching Dashboard");
     const active = t.status === "active";
     const [{ data: invites }, { data: roster }] = await Promise.all([
       sb.from("team_invites").select("email,created_at,sent_at").eq("team_id", t.id).order("created_at"),
