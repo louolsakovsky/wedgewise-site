@@ -57,7 +57,7 @@
       const email = document.getElementById("em").value.trim();
       const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + "/coach.html" } });
       const m = document.getElementById("m");
-      if (error) { m.className = "err"; m.textContent = "That didn’t send. Check the email address and try again in a minute."; return; }
+      if (error) { m.className = "err"; m.textContent = "That didn’t send. Check the email address and try again in a minute." + (error.message ? " (" + error.message + ")" : ""); return; }
       m.className = "ok"; m.textContent = "Check your email for the link.";
     };
   }
