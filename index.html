@@ -61,6 +61,8 @@ a{color:var(--link);text-underline-offset:3px}
 .display span{display:block;color:var(--gold);font-size:.4em;letter-spacing:-.015em;margin-top:10px}
 .hero .lede{color:var(--on-navy-muted);font-size:20px;line-height:1.5;max-width:30ch;margin:24px 0 28px}
 .hero-copy{padding-bottom:72px}
+.soon{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 20px;border-radius:12px;border:1.5px solid var(--gold);color:#fff;font-weight:700}
+.soon .i{color:var(--gold)}
 .signup{display:flex;gap:10px;max-width:460px;flex-wrap:wrap}
 .signup input{flex:1 1 220px;min-width:0;min-height:52px;border-radius:12px;border:1.5px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;font:inherit;padding:0 16px}
 .signup input::placeholder{color:#8EA3C4}
@@ -299,8 +301,7 @@ table.roster .go{color:var(--muted);text-align:right}
     <div class="kicker">Wedge yardages, inside 150</div>
     <h1 class="display">150<span>and in.</span></h1>
     <p class="lede">Your own carry numbers for every wedge and every swing, adjusted for the temperature and elevation you’re playing in today.</p>
-    <form class="signup" id="wl" novalidate><label for="wl-email" style="position:absolute;left:-9999px">Email</label><input id="wl-email" type="email" autocomplete="email" placeholder="you@email.com" required><button class="btn" type="submit">Get notified</button></form>
-    <p class="signup-note" id="wl-note">Coming soon to the App Store. Leave your email and we’ll tell you the day it’s out.</p>
+    <span class="soon">Coming soon to the App Store</span>
   </div>
   <div class="hero-phone"><div class="phone"><div class="screen"><div class="island"></div><div class="status"><span>9:41</span><span class="bars"><i></i></span></div><img src="img/app-home.webp" alt="WedgeWise Home: carry numbers for LW, SW, GW, PW and 9 iron at half, three-quarter and full swings, adjusted for 88°F and 1,000 feet." width="780" height="1688" decoding="async"></div></div></div>
 </div></section>
@@ -355,7 +356,7 @@ table.roster .go{color:var(--muted);text-align:right}
 <section class="s"><div class="wrap">
   <div class="head reveal"><h2>Questions</h2></div>
   <div class="faq reveal">
-    <details><summary>When can I get WedgeWise?</summary><p>WedgeWise is coming soon to the App Store for iPhone. Leave your email at the top of this page and we’ll tell you the day it’s out.</p></details>
+    <details><summary>When can I get WedgeWise?</summary><p>WedgeWise is coming soon to the App Store for iPhone. Follow along at wedgewise.app for the launch.</p></details>
     <details><summary>Is it free?</summary><p>The free version covers your lob, sand and gap wedges with the ½ · ¾ · Full system, both entry types, and your baseline numbers. WedgeWise Pro ($6.99 a month or $49.99 a year) adds the pitching wedge and 9 iron, today’s adjusted numbers, a custom swing system, and Swing Check.</p></details>
     <details><summary>Do I need a launch monitor?</summary><p>No. On-Course Entry works with just a rangefinder or the yardage on a sprinkler head: distance to the flag, and the paces from the flag to the pitch mark.</p></details>
     <details><summary>How accurate is the temperature and elevation adjustment?</summary><p>It uses published launch monitor research: about 1% of carry per 10°F and 1.1% per 1,000 ft. Because every shot is normalized the same way, your numbers stay fair whether you practiced on a cold morning or a hot afternoon. <a href="support.html">More on the Support page</a>.</p></details>
@@ -369,14 +370,5 @@ table.roster .go{color:var(--muted);text-align:right}
   </div>
   <div class="legal"><span>© 2026 WedgeWise LLC</span><span>Made for golfers who want to trust their numbers.</span></div>
 </div></footer>
-<script>
-/* "Get notified": saves the email to the waitlist table in Supabase (supabase/waitlist.sql). Anyone can add; nobody can read it from the website. */
-(function(){var f=document.getElementById("wl");if(!f)return;var n=document.getElementById("wl-note"),i=document.getElementById("wl-email"),b=f.querySelector("button");
-f.addEventListener("submit",function(e){e.preventDefault();var v=(i.value||"").trim().toLowerCase();
-if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){n.className="signup-note err";n.textContent="Enter a full email address, like you@email.com.";i.focus();return}
-b.disabled=true;b.textContent="Saving…";
-fetch("https://hayymoyocfbjoaifgrnf.supabase.co/rest/v1/waitlist",{method:"POST",headers:{apikey:"sb_publishable_VitLrXAoU4154mNLQxWf1g_GxGU8ON0","Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({email:v,source:"website"})})
-.then(function(r){if(r.ok||r.status===409){n.className="signup-note ok";n.textContent="You’re on the list. We’ll email you on launch day.";i.value="";b.textContent="Done"}else throw 0})
-.catch(function(){n.className="signup-note err";n.textContent="That didn’t go through. Try again in a minute, or email wedgewisegolf@gmail.com.";b.disabled=false;b.textContent="Get notified"})})})();
-</script>
+
 </body></html>
