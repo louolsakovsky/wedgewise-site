@@ -1,143 +1,382 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>WedgeWise</title>
+<title>WedgeWise · Wedge yardages, inside 150</title>
 <meta name="description" content="WedgeWise builds your personal wedge yardages for every club and swing, adjusted for today's temperature and elevation.">
+<meta name="theme-color" content="#041E42">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<meta property="og:type" content="website"><meta property="og:site_name" content="WedgeWise"><meta property="og:title" content="WedgeWise · Wedge yardages, inside 150"><meta property="og:description" content="WedgeWise builds your personal wedge yardages for every club and swing, adjusted for today's temperature and elevation.">
+<meta property="og:url" content="https://wedgewise.app/"><meta property="og:image" content="https://wedgewise.app/img/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://wedgewise.app/img/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-/* Layout: one centered column, navy header band, white page, gold used only for rules and marks. */
+/* WedgeWise site. Navy + white, gold only for marks and the one main button. Archivo everywhere, like the app. */
 :root{
-  --navy:#041E42; --blue:#1E407C; --gold:#C9A44C;
-  --bg:#FFFFFF; --panel:#F4F7FB; --ink:#0B1A33; --muted:#55657C; --line:#D9E1EC;
+  --navy:#041E42; --navy2:#0A2A57; --blue:#1E407C; --gold:#C9A44C; --gold-ink:#8A6A1F;
+  --bg:#FFFFFF; --paper:#F6F8FB; --panel:#F1F4F9; --ink:#0B1A33; --muted:#55657C; --line:#DDE3EC;
   --on-navy:#FFFFFF; --on-navy-muted:#B9C8E2; --link:#1E407C;
-  --display:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --body:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --hi:#2F7A4A; --mid:#9A6200; --lo:#B42318;
+  --font:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r:18px; --shadow:0 1px 2px rgba(4,30,66,.06),0 8px 24px rgba(4,30,66,.08);
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#050F20;--panel:#0C1A30;--ink:#EEF2F8;--muted:#9AA8BD;--line:#22324D;--navy:#0A2350;--link:#8FB1E8;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#050F20;--panel:#0C1A30;--ink:#EEF2F8;--muted:#9AA8BD;--line:#22324D;--navy:#0A2350;--link:#8FB1E8;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#050F20;--paper:#071429;--panel:#0C1A30;--ink:#EEF2F8;--muted:#9AA8BD;--line:#22324D;--navy:#071A3A;--navy2:#0C2550;--link:#8FB1E8;--hi:#7CCB97;--mid:#F2C14E;--lo:#F28B82;--gold-ink:#D9B45E;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#050F20;--paper:#071429;--panel:#0C1A30;--ink:#EEF2F8;--muted:#9AA8BD;--line:#22324D;--navy:#071A3A;--navy2:#0C2550;--link:#8FB1E8;--hi:#7CCB97;--mid:#F2C14E;--lo:#F28B82;--gold-ink:#D9B45E;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
 a{color:var(--link);text-underline-offset:3px}
-a:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:4px}
-.band{background:var(--navy);color:var(--on-navy)}
-.wrap{max-width:1040px;margin:0 auto;padding-inline:20px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px}
-.brand{display:flex;align-items:center;gap:12px;color:var(--on-navy);text-decoration:none;font-family:var(--display);font-weight:800;font-size:20px}
-.brand svg{width:40px;height:40px}
-.nav{display:flex;gap:18px;flex-wrap:wrap}
-.nav a{color:var(--on-navy-muted);text-decoration:none;font-weight:600;font-size:15px}
-.nav a:hover,.nav a[aria-current]{color:var(--on-navy)}
-.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding-block:40px 64px}
-.hero>*{min-width:0}
-.kicker{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
-h1.big{font-family:var(--display);font-weight:800;font-size:clamp(64px,12vw,128px);line-height:.9;letter-spacing:-.04em;margin:10px 0 0}
-h1.big span{display:block;color:var(--gold);font-size:.38em;letter-spacing:-.01em;margin-top:8px}
-.lede{color:var(--on-navy-muted);font-size:19px;max-width:34ch;margin:22px 0 26px}
-.badge{display:inline-flex;align-items:center;gap:10px;border:1.5px solid var(--gold);color:var(--on-navy);border-radius:12px;padding:12px 18px;font-weight:700}
-.card{background:#fff;color:#0B1A33;border-radius:18px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
-.card .h{display:flex;justify-content:space-between;font-size:13px;color:#55657C;margin-bottom:8px}
-.card table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;border-top:2px solid #041E42}
-.card th{font-size:12px;color:#55657C;font-weight:700;padding:8px 4px;text-align:center}
-.card th:first-child,.card td:first-child{text-align:left}
-.card td{padding:10px 4px;border-top:1px solid #D9E1EC;text-align:center;font-weight:800;font-size:26px;color:#2F7A4A}
-.card td small{display:block;font-size:11px;color:#1E407C;font-weight:700}
-.card td:first-child{font-size:16px;color:#0B1A33}
-.card td.mid{color:#9A6200}
-.card.demo td{font-size:16px;font-weight:700;color:#0B1A33}
-.card.demo td.g{color:#2F7A4A;font-weight:800}.card.demo td.y{color:#9A6200;font-weight:800}.card.demo td.r{color:#B42318;font-weight:800}
-.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px}
-.tabs button{font:inherit;font-weight:700;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:10px 12px;cursor:pointer;min-height:44px}
-.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
-.card .note{font-size:12px;color:#55657C;margin-top:8px}
-main{padding-block:56px}
-.features{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
-.features>div{min-width:0;border-top:3px solid var(--gold);padding-top:16px}
-h2{font-family:var(--display);font-weight:800;font-size:28px;line-height:1.15;letter-spacing:-.01em;margin:0 0 10px;text-wrap:balance}
-h3{font-family:var(--display);font-weight:800;font-size:20px;margin:0 0 6px}
-.muted{color:var(--muted)}
-.formula{margin-top:48px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
-.formula code{font-family:var(--mono);font-size:15px;display:block;overflow-x:auto;white-space:nowrap;padding:12px 0}
-.doc{max-width:720px}
-.doc h1{font-family:var(--display);font-weight:800;font-size:clamp(36px,6vw,52px);letter-spacing:-.02em;line-height:1.05;margin:0}
-.doc h2{font-size:22px;margin-top:36px}
-.doc p,.doc li{max-width:66ch}
-.doc .meta{color:var(--muted);font-size:15px;margin-top:10px}
-.callout{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:14px 16px}
-.email{font-family:var(--mono);font-size:16px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;user-select:all;overflow-wrap:anywhere}
-details{border-top:1px solid var(--line);padding-block:14px}
-details:last-of-type{border-bottom:1px solid var(--line)}
-summary{cursor:pointer;font-weight:700;font-size:18px}
-footer{border-top:1px solid var(--line);padding-block:28px;color:var(--muted);font-size:14px}
-footer .wrap{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px}
+.i{flex:none}
 
-/* Teams + coach pages */
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;counter-reset:s}
-.steps>div{min-width:0;border-top:3px solid var(--gold);padding-top:16px}
-.steps b.n{display:inline-flex;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold);align-items:center;justify-content:center;font-size:14px;margin-bottom:8px}
-.price{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin:6px 0 24px}
-.price strong{font-family:var(--display);font-size:56px;font-weight:800;letter-spacing:-.02em;color:var(--on-navy);font-variant-numeric:tabular-nums}
-.price span{color:var(--on-navy-muted)}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 24px;border-radius:12px;background:var(--gold);color:#041E42;font-weight:800;text-decoration:none;border:0;font:inherit;font-weight:800;cursor:pointer}
-.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
-.btn:disabled{opacity:.5;cursor:default}
-.band .btn.ghost{color:var(--on-navy);border-color:var(--on-navy-muted)}
+/* Top bar: stays pinned while you scroll */
+.bar{position:sticky;top:0;z-index:50;background:rgba(4,30,66,.92);-webkit-backdrop-filter:saturate(1.4) blur(14px);backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid rgba(255,255,255,.08)}
+.bar .wrap{display:flex;align-items:center;gap:16px;min-height:68px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-weight:800;font-size:19px;letter-spacing:-.01em}
+.brand svg{width:34px;height:34px}
+.nav{display:flex;gap:4px;margin-left:auto}
+.nav a{color:var(--on-navy-muted);text-decoration:none;font-weight:600;font-size:15px;padding:8px 12px;border-radius:10px}
+.nav a:hover{color:#fff;background:rgba(255,255,255,.06)}
+.nav a[aria-current]{color:#fff}
+.bar .btn{min-height:42px;padding:0 16px;font-size:15px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 22px;border-radius:12px;background:var(--gold);color:#041E42;font:inherit;font-weight:800;text-decoration:none;border:0;cursor:pointer;box-shadow:0 6px 18px rgba(201,164,76,.32);transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(201,164,76,.38)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);box-shadow:none}
+.btn.ghost:hover{border-color:var(--muted)}
+.dark .btn.ghost,.hero .btn.ghost{color:#fff;border-color:rgba(255,255,255,.3)}
+.btn:disabled{opacity:.5;cursor:default;transform:none}
+.link{display:inline-flex;align-items:center;gap:6px;font-weight:700;text-decoration:none}
+.link:hover{text-decoration:underline}
+
+/* Hero */
+.hero{position:relative;z-index:1;background:radial-gradient(900px 500px at 85% 20%,rgba(201,164,76,.16),transparent 60%),radial-gradient(700px 500px at 0% 100%,rgba(30,64,124,.55),transparent 60%),var(--navy);color:#fff}
+.hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding-block:72px 0}
+.hero .wrap>*{min-width:0}
+.kicker{font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.display{font-weight:800;font-size:clamp(68px,11vw,136px);line-height:.88;letter-spacing:-.045em;margin:14px 0 0}
+.display span{display:block;color:var(--gold);font-size:.4em;letter-spacing:-.015em;margin-top:10px}
+.hero .lede{color:var(--on-navy-muted);font-size:20px;line-height:1.5;max-width:30ch;margin:24px 0 28px}
+.hero-copy{padding-bottom:72px}
+.signup{display:flex;gap:10px;max-width:460px;flex-wrap:wrap}
+.signup input{flex:1 1 220px;min-width:0;min-height:52px;border-radius:12px;border:1.5px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;font:inherit;padding:0 16px}
+.signup input::placeholder{color:#8EA3C4}
+.signup input:focus{outline:2px solid var(--gold);border-color:transparent}
+.signup-note{font-size:14px;color:var(--on-navy-muted);margin:12px 0 0;min-height:22px}
+.signup-note.ok{color:#9FE0B5;font-weight:700}.signup-note.err{color:#FFC9BE;font-weight:700}
+.hero-phone{display:flex;justify-content:center;align-self:end}
+.hero-phone .phone{margin-bottom:-120px}
+
+/* Phone frame around real app screens */
+.phone{width:min(300px,78vw);border-radius:48px;padding:11px;background:linear-gradient(145deg,#2A3346,#0B1220 40%,#1C2433);box-shadow:0 40px 80px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06) inset;position:relative}
+.screen{border-radius:38px;overflow:hidden;background:#F6F8FB;position:relative}
+.screen .status{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font-size:13px;font-weight:700;color:#0B1A33;background:#F6F8FB}
+.screen .island{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:92px;height:26px;border-radius:20px;background:#05070C}
+.screen .bars{display:flex;gap:4px;align-items:center}
+.screen .bars i{display:block;width:16px;height:9px;border-radius:2.5px;border:1.5px solid #0B1A33;position:relative}
+.screen .bars i::after{content:"";position:absolute;inset:1px;right:4px;background:#0B1A33;border-radius:1px}
+.screen img{width:100%;height:auto}
+
+/* Sections */
+section.s{padding-block:96px}
+section.s.alt{background:var(--paper)}
+.head{max-width:680px;margin:0 auto 52px;text-align:center}
+h2{font-weight:800;font-size:clamp(30px,4.2vw,44px);line-height:1.08;letter-spacing:-.025em;margin:10px 0 14px;text-wrap:balance}
+h3{font-weight:800;font-size:20px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
+.muted{color:var(--muted)}
+.lead{font-size:19px;color:var(--muted);line-height:1.55}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.step{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:26px;box-shadow:var(--shadow);min-width:0}
+.badge-i{width:48px;height:48px;border-radius:14px;background:var(--navy);color:var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.step .n{font-size:13px;font-weight:800;color:var(--gold-ink);letter-spacing:.1em;margin-bottom:4px}
+
+.feature{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.feature+.feature{margin-top:110px}
+.feature>*{min-width:0}
+.feature.flip .shot{order:2}
+.feature .shot{display:flex;justify-content:center}
+.ticks{list-style:none;padding:0;margin:22px 0 0;display:grid;gap:12px}
+.ticks li{display:flex;gap:12px;align-items:flex-start}
+.ticks .i{color:var(--hi);margin-top:3px}
+
+/* Swing Check picture, drawn in HTML: two clips side by side with gold lines */
+.clips{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:min(400px,100%)}
+.clip{aspect-ratio:9/16;border-radius:20px;background:linear-gradient(180deg,#0D2A55,#041E42);position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.clip b{position:absolute;top:14px;left:16px;font-size:13px;color:#fff;letter-spacing:.04em}
+.clip svg{position:absolute;inset:0;width:100%;height:100%}
+.clip .scrub{position:absolute;left:16px;right:16px;bottom:74px;height:3px;border-radius:2px;background:rgba(255,255,255,.18)}.clip .scrub::after{content:"";position:absolute;left:0;top:0;bottom:0;width:42%;background:var(--gold);border-radius:2px}
+.clip .ball{position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;left:58%;top:71%}
+.clip .play{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center}
+
+.formula{background:var(--navy);color:#fff;border-radius:24px;padding:44px;display:grid;grid-template-columns:1fr 1.2fr;gap:40px;align-items:center}
+.formula>*{min-width:0}
+.formula .muted{color:var(--on-navy-muted)}
+.formula code{font-family:var(--mono);font-size:15px;line-height:1.7;display:block;padding:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#fff}
+.factors{display:flex;gap:22px;margin-top:18px;flex-wrap:wrap}
+.factors div{display:flex;gap:10px;align-items:center;color:var(--on-navy-muted);font-size:15px}
+.factors .i{color:var(--gold)}
+.factors b{color:#fff}
+
+.teaser{display:grid;grid-template-columns:1.2fr .8fr;gap:32px;align-items:center;border:1px solid var(--line);border-radius:24px;padding:40px;background:var(--bg);box-shadow:var(--shadow)}
+.teaser>*{min-width:0}
+
+.faq{max-width:760px;margin:0 auto}
+details{border-bottom:1px solid var(--line);padding:4px 0}
+details:first-of-type{border-top:1px solid var(--line)}
+summary{cursor:pointer;font-weight:700;font-size:18px;list-style:none;display:flex;justify-content:space-between;gap:16px;padding:18px 0}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:24px;line-height:1;color:var(--gold-ink);font-weight:500;transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{margin:0 0 18px;color:var(--muted)}
+
+/* Footer */
+footer{border-top:1px solid var(--line);background:var(--paper);padding-block:56px 32px;font-size:15px}
+.foot{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:32px}
+.foot h4{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+.foot a.brand{display:inline-flex}
+.foot a{display:block;color:var(--ink);text-decoration:none;padding:3px 0}
+.foot a:hover{color:var(--link)}
+.foot .brand{color:var(--ink)}
+.legal{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:14px;display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
+
+/* Inner pages (privacy, support, coach) */
+.pagehead{background:var(--navy);color:#fff;padding-block:56px 48px}
+.pagehead h1{font-weight:800;font-size:clamp(36px,6vw,56px);letter-spacing:-.03em;line-height:1.02;margin:10px 0 0}
+.pagehead p{color:var(--on-navy-muted);margin:12px 0 0;max-width:60ch}
+.doc{max-width:740px;padding-block:56px 80px}
+.doc h2{font-size:24px;margin-top:40px}
+.doc p,.doc li{max-width:68ch}
+.callout{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:12px;padding:16px 18px}
+.email{font-family:var(--mono);font-size:16px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;user-select:all;overflow-wrap:anywhere}
+
+/* Teams page */
+.price{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin:8px 0 6px}
+.price strong{font-size:64px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:22px}
+.card{background:#fff;color:#0B1A33;border-radius:22px;padding:22px;box-shadow:0 30px 70px rgba(0,0,0,.35)}
+.card .h{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#55657C;margin-bottom:6px}
+.card .t{font-weight:800;font-size:17px;margin-bottom:14px}
+.cmp{display:grid;grid-template-columns:72px 44px 1fr;gap:10px 12px;align-items:center;font-variant-numeric:tabular-nums}
+.cmp .nm{font-weight:700;font-size:15px}
+.cmp .v{font-weight:800;font-size:22px;color:#2F7A4A;text-align:right}
+.cmp .v.mid{color:#9A6200}
+.rb{position:relative;height:22px}
+.rb::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:#DDE3EC}
+.rb i{position:absolute;top:50%;height:8px;margin-top:-4px;border-radius:4px;background:rgba(4,30,66,.18)}
+.rb b{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#041E42;box-shadow:0 0 0 2px #fff}
+.card .note{font-size:12px;color:#55657C;margin-top:12px}
+.pricebox{background:var(--navy);color:#fff;border-radius:24px;padding:44px;display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center}
+.pricebox>*{min-width:0}
+.pricebox .muted{color:var(--on-navy-muted)}
+.pricebox .ticks .i{color:var(--gold)}
+
+/* Scroll reveal (only when JavaScript runs; content is visible without it) */
+.js .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
+.js .reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.js .reveal{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}.btn{transition:none}}
+
+@media (max-width:900px){
+  .hero .wrap{grid-template-columns:1fr;padding-top:48px;gap:8px}
+  .hero-copy{padding-bottom:40px}
+  .hero-phone .phone{margin-bottom:-160px}
+  .hero{padding-bottom:0}
+  .after-hero{padding-top:200px!important}
+  .feature,.feature.flip{grid-template-columns:1fr;gap:36px}
+  .feature.flip .shot{order:0}
+  .formula,.teaser,.pricebox{grid-template-columns:1fr;padding:32px}
+  .steps{grid-template-columns:1fr}
+  .foot{grid-template-columns:1fr 1fr}
+  .foot>div:first-child{grid-column:1/-1}
+}
+@media (max-width:560px){
+  .nav a.hide-sm{display:none}
+  .nav{gap:0}.nav a{padding:8px}
+  .bar .btn{padding:0 12px;font-size:14px}
+  .brand span{display:none}
+  section.s{padding-block:72px}
+}
+
+.dash{padding-block:28px 72px}
+.panel{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:24px;margin-bottom:20px;box-shadow:var(--shadow)}
+.panel h2{font-size:24px;margin:0 0 6px}.panel h3{margin:0 0 10px}
 .field{display:block;margin-bottom:14px}
 .field span{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px}
-.field input{width:100%;min-height:50px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;padding:0 14px}
-.field input:focus{outline:2px solid var(--gold);border-color:transparent}
-.pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;border:1.5px solid var(--line)}
-.pill.on{border-color:#2F7A4A;color:#2F7A4A}.pill.wait{border-color:var(--gold);color:#9A6200}
+.field input,.search{width:100%;min-height:50px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;padding:0 14px}
+.field input:focus,.search:focus{outline:2px solid var(--gold);border-color:transparent}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:24px;overflow-x:auto}
+.tabs button{font:inherit;font-weight:700;font-size:16px;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:12px 14px;cursor:pointer;min-height:48px;white-space:nowrap;display:inline-flex;gap:8px;align-items:center}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
+.tabs .sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:800;background:var(--panel);color:var(--muted)}
+.pill.on{background:rgba(47,122,74,.12);color:var(--hi)}.pagehead .pill.on{background:rgba(124,203,151,.16);color:#9FE0B5}.pill.wait{background:rgba(201,164,76,.16);color:var(--gold-ink)}
 .code{font-family:var(--mono);font-size:34px;letter-spacing:.18em;font-weight:500}
+.err{color:var(--lo);font-weight:700}.ok{color:var(--hi);font-weight:700}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.tile{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow);min-width:0}
+.tile .lbl{font-size:13px;font-weight:700;color:var(--muted);display:flex;gap:8px;align-items:center}
+.tile .lbl .i{color:var(--gold-ink)}
+.tile .big{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-top:8px;font-variant-numeric:tabular-nums}
+.tile .big small{font-size:18px;font-weight:700;color:var(--muted);letter-spacing:0}
+.tile .sub{font-size:14px;color:var(--muted);margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-weight:700;font-size:15px;min-height:40px;padding:0 16px;border-radius:999px;border:2px solid transparent;background:var(--panel);color:var(--muted);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--bg);border-color:var(--ink);color:var(--ink);box-shadow:0 1px 3px rgba(4,30,66,.14)}
+.pickers{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;margin:4px 0 22px}
+.pickers .lab{font-size:13px;font-weight:700;color:var(--muted);margin-right:4px}
+.chart{display:grid;grid-template-columns:minmax(90px,170px) 64px 1fr 64px;gap:0;align-items:center;font-variant-numeric:tabular-nums}
+.chart .hd{font-size:12px;font-weight:700;color:var(--muted);padding:0 12px 8px 0;border-bottom:1px solid var(--line)}
+.chart .c{padding:10px 12px 10px 0;border-bottom:1px solid var(--line);min-width:0}
+.chart .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chart .v{font-weight:800;font-size:22px;text-align:right}
+.chart .pm{color:var(--muted);font-size:15px}
+.axis{position:relative;height:18px;font-size:11px;color:var(--muted)}
+.axis span{position:absolute;transform:translateX(-50%);top:2px}
+.rb{position:relative;height:26px}
+.rb::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line)}
+.rb .gl{position:absolute;top:0;bottom:0;width:1px;background:var(--line);opacity:.7}
+.rb i{position:absolute;top:50%;height:10px;margin-top:-5px;border-radius:5px;background:rgba(30,64,124,.22)}
+.rb b{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy);box-shadow:0 0 0 2px var(--bg)}
+.rb:hover b{transform:scale(1.15)}
+.hi{color:var(--hi)}.midc{color:var(--mid)}.lo{color:var(--lo)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted);margin-top:14px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .dot{width:10px;height:10px;border-radius:50%}
+.legend .bar{width:22px;height:8px;border-radius:4px;background:rgba(30,64,124,.22)}
 table.roster{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-table.roster th{font-size:13px;color:var(--muted);text-align:left;padding:8px 6px;border-bottom:2px solid var(--ink)}
-table.roster td{padding:12px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+table.roster th{font-size:13px;color:var(--muted);text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.roster th button{font:inherit;font-weight:700;color:inherit;background:none;border:0;cursor:pointer;padding:0;display:inline-flex;gap:4px;align-items:center}
+table.roster th button[data-on]{color:var(--ink)}
+table.roster td{padding:14px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
 table.roster tr.player{cursor:pointer}
 table.roster tr.player:hover td{background:var(--panel)}
-.mx{border-collapse:collapse;margin:6px 0 4px;font-variant-numeric:tabular-nums}
-.mx th{font-size:12px;color:var(--muted);padding:4px 10px;text-align:center}
-.mx td{padding:6px 10px;text-align:center;font-weight:800;font-size:20px}
-.mx td:first-child{text-align:left;font-size:15px}
-.lo{color:#B42318}.midc{color:#9A6200}.hi{color:#2F7A4A}
-.err{color:#B42318;font-weight:700}.ok{color:#2F7A4A;font-weight:700}
+table.roster .go{color:var(--muted);text-align:right}
+.av{width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;font-weight:800;font-size:14px;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--gold);flex:none}
+.who{display:flex;gap:12px;align-items:center}
+.mx{border-collapse:separate;border-spacing:6px;margin:0 -6px;font-variant-numeric:tabular-nums;width:calc(100% + 12px)}
+.mx th{font-size:13px;color:var(--muted);padding:4px;text-align:center;font-weight:700}
+.mx th:first-child{text-align:left}
+.mx td.cl{font-weight:800;font-size:16px;white-space:nowrap}
+.mx td.cl small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.mx td.cell{background:var(--panel);border-radius:12px;text-align:center;padding:10px 6px;cursor:pointer;border:2px solid transparent}
+.mx td.cell:hover{border-color:var(--line)}
+.mx td.cell[aria-pressed="true"]{border-color:var(--ink);background:var(--bg)}
+.mx td.cell .n{font-size:26px;font-weight:800;line-height:1.1}
+.mx td.cell .pm{font-size:13px;color:var(--muted);font-weight:600}
+.mx td.cell .tr{font-size:12px;font-weight:700;color:var(--muted);display:inline-flex;align-items:center;gap:2px}
+.mx td.empty{color:var(--muted);text-align:center;cursor:default}
+.strip{position:relative;height:120px;margin:10px 0 4px}
+.strip .base{position:absolute;left:0;right:0;bottom:24px;height:1px;background:var(--line)}
+.strip .med{position:absolute;top:8px;bottom:24px;width:0;border-left:2px dashed var(--gold)}
+.strip .med span{position:absolute;top:-6px;left:6px;font-size:12px;font-weight:800;color:var(--gold-ink);white-space:nowrap}
+.strip .band{position:absolute;bottom:24px;height:72px;background:rgba(30,64,124,.08);border-radius:8px 8px 0 0}
+.strip .d{position:absolute;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--navy);box-shadow:0 0 0 2px var(--bg);cursor:default}
+.strip .tk{position:absolute;bottom:0;transform:translateX(-50%);font-size:12px;color:var(--muted)}
+.tip{position:fixed;z-index:80;pointer-events:none;background:var(--ink);color:var(--bg);font-size:13px;font-weight:600;padding:6px 10px;border-radius:8px;white-space:nowrap;transform:translate(-50%,calc(-100% - 10px));box-shadow:0 6px 16px rgba(0,0,0,.2)}
+.shots{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:15px}
+.shots th{font-size:12px;color:var(--muted);text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+.shots td{padding:10px 6px;border-bottom:1px solid var(--line)}
+.shots td.r,.shots th.r{text-align:right}
+.back{display:inline-flex;align-items:center;gap:6px;font-weight:700;text-decoration:none;margin-bottom:18px;background:none;border:0;font:inherit;font-weight:700;color:var(--link);cursor:pointer;padding:6px 0}
+.grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:20px}
+.grid2>*{min-width:0}
 .scroll{overflow-x:auto}
-@media (max-width:760px){.steps{grid-template-columns:1fr}.hide-sm{display:none}}
-@media (max-width:480px){.top{gap:10px}.brand{font-size:17px;gap:8px}.brand svg{width:32px;height:32px}.nav{gap:12px}.nav a{font-size:14px}}
-@media (max-width:760px){.hero{grid-template-columns:1fr;padding-block:24px 48px}.features{grid-template-columns:1fr}}
-@media (prefers-reduced-motion:no-preference){.card{animation:rise .6s ease-out both}@keyframes rise{from{transform:translateY(12px)}to{transform:none}}}
-</style></head>
+.empty-state{text-align:center;padding:36px 16px;color:var(--muted)}
+@media (max-width:900px){.tiles{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.hide-sm{display:none}}
+@media (max-width:600px){.tiles{grid-template-columns:repeat(3,1fr);gap:8px}.tile{padding:14px}.tile .big{font-size:24px}.tile .big small{font-size:13px}.tile .sub{font-size:12px;line-height:1.35}.tile .lbl{font-size:12px}.tile .lbl .i{display:none}
+  .chart{grid-template-columns:minmax(64px,96px) 40px 1fr 40px}.chart .c{padding-right:8px}.chart .hd{padding-right:8px}.chart .v{font-size:18px}.chart .nm{font-size:15px}.chart .pm{font-size:13px}
+  .axis span:not(:first-child):not(:last-child){display:none}.axis span:first-child{transform:none}.axis span:last-child{transform:translateX(-100%)}
+  .shots{font-size:14px}.shots td,.shots th{padding:9px 4px}.shots td.muted{white-space:nowrap;font-size:13px}
+  .panel{padding:18px}.mx td.cell .n{font-size:22px}}
+</style><script>document.documentElement.classList.add("js");addEventListener("DOMContentLoaded",function(){var els=document.querySelectorAll(".reveal");if(!("IntersectionObserver" in window)){els.forEach(function(e){e.classList.add("in")});return}var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}})},{rootMargin:"0px 0px -8% 0px"});els.forEach(function(e){io.observe(e)})});</script></head>
 <body>
-<div class="band"><div class="wrap"><header class="top"><a class="brand" href="index.html"><svg viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="230" fill="#041E42"/><rect x="70" y="70" width="884" height="884" rx="190" fill="none" stroke="#C9A44C" stroke-width="26"/><path d="M262 330h104l64 268 72-268h96l72 268 64-268h104L702 760H598l-86-292-86 292H322z" fill="#fff"/><circle cx="512" cy="250" r="58" fill="#C9A44C"/></svg>WedgeWise</a><nav class="nav" aria-label="Site"><a href="index.html" aria-current="page">Home</a><a href="teams.html">Teams</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav></header><section class="hero">
-  <div>
+<header class="bar"><div class="wrap"><a class="brand" href="index.html"><svg viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="230" fill="#041E42"/><rect x="70" y="70" width="884" height="884" rx="190" fill="none" stroke="#C9A44C" stroke-width="26"/><path d="M262 330h104l64 268 72-268h96l72 268 64-268h104L702 760H598l-86-292-86 292H322z" fill="#fff"/><circle cx="512" cy="250" r="58" fill="#C9A44C"/></svg><span>WedgeWise</span></a><nav class="nav" aria-label="Site"><a href="index.html" class="" aria-current="page">Home</a><a href="teams.html" class="">Teams</a><a href="support.html" class="hide-sm">Support</a></nav><a class="btn" href="teams.html">For coaches</a></div></header>
+<section class="hero"><div class="wrap">
+  <div class="hero-copy">
     <div class="kicker">Wedge yardages, inside 150</div>
-    <h1 class="big">150<span>and in.</span></h1>
-    <p class="lede">Your own carry numbers for every wedge and every swing, adjusted for the temperature and elevation you're playing in today.</p>
-    <span class="badge">Coming soon to the App Store</span>
+    <h1 class="display">150<span>and in.</span></h1>
+    <p class="lede">Your own carry numbers for every wedge and every swing, adjusted for the temperature and elevation you’re playing in today.</p>
+    <form class="signup" id="wl" novalidate><label for="wl-email" style="position:absolute;left:-9999px">Email</label><input id="wl-email" type="email" autocomplete="email" placeholder="you@email.com" required><button class="btn" type="submit">Get notified</button></form>
+    <p class="signup-note" id="wl-note">Coming soon to the App Store. Leave your email and we’ll tell you the day it’s out.</p>
   </div>
-  <div class="card" role="img" aria-label="Example WedgeWise matrix: carry yards for LW, SW, GW and PW at half, three-quarter and full swings, adjusted for 85 degrees and 1,000 feet.">
-    <div class="h"><span>Example · adjusted for 85°F, 1,000 ft</span><span>yd, carry</span></div>
-    <table><thead><tr><th>Club</th><th>½</th><th>¾</th><th>Full</th></tr></thead>
-    <tbody>
-      <tr><td>LW</td><td>43<small>+1</small></td><td>59<small>+1</small></td><td>78<small>+2</small></td></tr>
-      <tr><td>SW</td><td>53<small>+1</small></td><td>71<small>+1</small></td><td>90<small>+2</small></td></tr>
-      <tr><td>GW</td><td class="mid">64<small>+1</small></td><td class="mid">86<small>+2</small></td><td class="mid">102<small>+2</small></td></tr>
-      <tr><td>PW</td><td>78<small>+2</small></td><td>101<small>+2</small></td><td>120<small>+2</small></td></tr>
-    </tbody></table>
-    <div class="note">Number color shows how many shots each one is built on.</div>
+  <div class="hero-phone"><div class="phone"><div class="screen"><div class="island"></div><div class="status"><span>9:41</span><span class="bars"><i></i></span></div><img src="img/app-home.webp" alt="WedgeWise Home: carry numbers for LW, SW, GW, PW and 9 iron at half, three-quarter and full swings, adjusted for 88°F and 1,000 feet." width="780" height="1688" decoding="async"></div></div></div>
+</div></section>
+
+<section class="s after-hero" style="padding-top:150px"><div class="wrap">
+  <div class="head reveal"><div class="kicker" style="color:var(--gold-ink)">How it works</div><h2>Three steps to numbers you trust</h2><p class="lead">Confidence comes from knowing exactly how far each swing carries. WedgeWise turns your own shots into numbers you can count on.</p></div>
+  <div class="steps">
+    <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4h11l-3 4 3 4H6"/><path d="M3 21h8"/></svg></div><div class="n">STEP 1</div><h3>Log your shots</h3><p class="muted">On the course, pace off from the flag to the pitch mark. On a launch monitor, type each carry. Either way takes seconds.</p></div>
+    <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg></div><div class="n">STEP 2</div><h3>Your numbers turn green</h3><p class="muted">Every club and swing gets its own number from your shots. Five shots in and it turns green: a number you can trust.</p></div>
+    <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></svg></div><div class="n">STEP 3</div><h3>See today’s numbers</h3><p class="muted">Enter today’s temperature and elevation, or tap for your location, and every number moves to what it carries right now.</p></div>
   </div>
-</section></div></div>
-<main><div class="wrap"><section class="features" aria-label="What WedgeWise does">
-  <div><h3>Your numbers</h3><p class="muted">Log shots on the course or from a launch monitor. WedgeWise builds a carry number for each club and swing from your own shots, not a chart from someone else.</p></div>
-  <div><h3>Today's numbers</h3><p class="muted">Every shot is normalized to 75°F at sea level, so hot days and cold days compare fairly. Enter today's conditions and every number moves to what it should carry right now.</p></div>
-  <div><h3>Swing Check</h3><p class="muted">Put a practice swing beside the sand wedge swing that built your number, trimmed to start together and played frame by frame. Feel versus real.</p></div>
-</section>
-<section class="formula">
-  <h2>The adjustment, in the open</h2>
-  <p class="muted">About 1% of carry per 10°F and 1.1% per 1,000 ft of elevation, from published launch monitor research.</p>
-  <code>today = baseline × (1 + 0.010·(T − 75)/10) × (1 + 0.011·elevation/1000)</code>
-  <p class="muted">Example: a 101-yard sand wedge at sea level and 75°F carries about 108 yards at 90°F and 5,300 ft.</p>
-</section></div></main>
-<footer><div class="wrap"><span>© 2026 WedgeWise LLC</span><span><a href="privacy.html">Privacy</a> · <a href="support.html">Support</a></span></div></footer>
+</div></section>
+
+<section class="s alt"><div class="wrap">
+  <div class="feature reveal">
+    <div class="shot"><div class="phone"><div class="screen"><div class="island"></div><div class="status"><span>9:41</span><span class="bars"><i></i></span></div><img src="img/app-cell.webp" alt="Shot details for a sand wedge full swing: baseline 91 yards, 94 today, with a bell curve of every shot." width="780" height="1688" loading="lazy" decoding="async"></div></div></div>
+    <div><div class="kicker" style="color:var(--gold-ink)">Your numbers</div><h2>Built from your shots, not a chart</h2><p class="lead">Tap any number to see every shot behind it. The curve shows how tightly your shots land, so you know exactly how much to trust it.</p>
+      <ul class="ticks"><li><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg><span>A number for every club and swing in your bag</span></li><li><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg><span>Every shot normalized to 75°F at sea level, so hot and cold days compare fairly</span></li><li><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg><span>Colors show how many shots each number is built on</span></li></ul></div>
+  </div>
+  <div class="feature flip reveal">
+    <div class="shot"><div class="phone"><div class="screen"><div class="island"></div><div class="status"><span>9:41</span><span class="bars"><i></i></span></div><img src="img/app-oncourse.webp" alt="On-Course Entry: temperature, elevation, club, swing, distance to the flag, carry, uphill yards and the flat-ground carry." width="780" height="1688" loading="lazy" decoding="async"></div></div></div>
+    <div><div class="kicker" style="color:var(--gold-ink)">On the course</div><h2>Log a shot in seconds</h2><p class="lead">Distance to the flag, where it landed, and you’re done. Uphill, downhill or a light breeze? Add the yards and WedgeWise works out the flat-ground carry.</p>
+      <ul class="ticks"><li><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg><span>On-Course Entry and Launch Monitor Entry</span></li><li><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg><span>Today’s conditions fill in from your location</span></li><li><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg><span>Copy your last shot when you’re hitting the same club</span></li></ul></div>
+  </div>
+  <div class="feature reveal">
+    <div class="shot"><div class="clips" role="img" aria-label="Swing Check: a baseline swing and a practice swing side by side, with gold lines drawn on both.">
+  <div class="clip"><b>BASELINE</b><svg viewBox="0 0 90 160" preserveAspectRatio="none"><line x1="18" y1="132" x2="70" y2="40" stroke="#C9A44C" stroke-width="1.6" stroke-linecap="round"/><line x1="20" y1="118" x2="74" y2="118" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="3 3"/></svg><span class="play"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="position:static"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z" fill="#041E42"/></svg></span></div>
+  <div class="clip"><b>PRACTICE</b><svg viewBox="0 0 90 160" preserveAspectRatio="none"><line x1="18" y1="132" x2="70" y2="40" stroke="#C9A44C" stroke-width="1.6" stroke-linecap="round"/><line x1="20" y1="118" x2="74" y2="118" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="3 3"/></svg><span class="play"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="position:static"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z" fill="#041E42"/></svg></span></div>
+</div></div>
+    <div><div class="kicker" style="color:var(--gold-ink)">Swing Check · Pro</div><h2>Feel versus real</h2><p class="lead">Put a practice swing beside the sand wedge swing that built your number. Trim both to start together, play them frame by frame, and draw lines right on the video.</p>
+      <ul class="ticks"><li><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg><span>Baseline and practice, side by side</span></li><li><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg><span>Slow motion and frame-by-frame</span></li><li><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg><span>Draw lines in gold, white or red</span></li></ul></div>
+  </div>
+</div></section>
+
+<section class="s"><div class="wrap">
+  <div class="formula reveal">
+    <div><div class="kicker">The adjustment, in the open</div><h2 style="color:#fff">No black box</h2><p class="muted" style="margin:0">About 1% of carry per 10°F and 1.1% per 1,000 ft of elevation, from published launch monitor research.</p></div>
+    <div><code>today = baseline<br>&nbsp;&nbsp;× (1 + 0.010 · (T − 75) / 10)<br>&nbsp;&nbsp;× (1 + 0.011 · elevation / 1000)</code>
+      <div class="factors"><div><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></svg><span><b>+1%</b> per 10°F</span></div><div><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20l6.5-11 4 6 2.5-4L21 20z"/></svg><span><b>+1.1%</b> per 1,000 ft</span></div></div>
+      <p class="muted" style="margin:16px 0 0;font-size:15px">Example: a 101-yard sand wedge at sea level and 75°F carries about 108 yards at 90°F and 5,300 ft.</p></div>
+  </div>
+</div></section>
+
+<section class="s alt"><div class="wrap">
+  <div class="teaser reveal">
+    <div><div class="kicker" style="color:var(--gold-ink)">WedgeWise Teams</div><h2>Coaching a college team?</h2><p class="lead">Put your whole roster on WedgeWise. Every player gets Pro, and you see every player’s numbers, and how consistent each one is, in one Coaching Dashboard.</p>
+      <div class="row" style="margin-top:22px"><a class="btn" href="teams.html">See WedgeWise Teams <svg class="i" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div></div>
+    <div class="card" style="box-shadow:var(--shadow);border:1px solid var(--line)"><div class="h"><span>Coaching Dashboard · example</span><span>yd, carry</span></div><div class="t">SW · ¾ swing, across the team</div><div class="cmp"><span class="nm">Player A</span><span class="v">74</span><span class="rb" title="Player A: 74 ± 2 yd"><i style="left:36.8%;width:21.1%"></i><b style="left:47.4%"></b></span><span class="nm">Player B</span><span class="v">71</span><span class="rb" title="Player B: 71 ± 3 yd"><i style="left:15.8%;width:31.6%"></i><b style="left:31.6%"></b></span><span class="nm">Player C</span><span class="v mid">77</span><span class="rb" title="Player C: 77 ± 5 yd"><i style="left:36.8%;width:52.6%"></i><b style="left:63.2%"></b></span><span class="nm">Player D</span><span class="v">69</span><span class="rb" title="Player D: 69 ± 2 yd"><i style="left:10.5%;width:21.1%"></i><b style="left:21.1%"></b></span></div><div class="note">Dot: the player’s number. Bar: how tightly their shots land.</div></div>
+  </div>
+</div></section>
+
+<section class="s"><div class="wrap">
+  <div class="head reveal"><h2>Questions</h2></div>
+  <div class="faq reveal">
+    <details><summary>When can I get WedgeWise?</summary><p>WedgeWise is coming soon to the App Store for iPhone. Leave your email at the top of this page and we’ll tell you the day it’s out.</p></details>
+    <details><summary>Is it free?</summary><p>The free version covers your lob, sand and gap wedges with the ½ · ¾ · Full system, both entry types, and your baseline numbers. WedgeWise Pro ($6.99 a month or $49.99 a year) adds the pitching wedge and 9 iron, today’s adjusted numbers, a custom swing system, and Swing Check.</p></details>
+    <details><summary>Do I need a launch monitor?</summary><p>No. On-Course Entry works with just a rangefinder or the yardage on a sprinkler head: distance to the flag, and the paces from the flag to the pitch mark.</p></details>
+    <details><summary>How accurate is the temperature and elevation adjustment?</summary><p>It uses published launch monitor research: about 1% of carry per 10°F and 1.1% per 1,000 ft. Because every shot is normalized the same way, your numbers stay fair whether you practiced on a cold morning or a hot afternoon. <a href="support.html">More on the Support page</a>.</p></details>
+  </div>
+</div></section>
+<footer><div class="wrap">
+  <div class="foot">
+    <div><a class="brand" href="index.html" style="padding:0"><svg viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="230" fill="#041E42"/><rect x="70" y="70" width="884" height="884" rx="190" fill="none" stroke="#C9A44C" stroke-width="26"/><path d="M262 330h104l64 268 72-268h96l72 268 64-268h104L702 760H598l-86-292-86 292H322z" fill="#fff"/><circle cx="512" cy="250" r="58" fill="#C9A44C"/></svg><span>WedgeWise</span></a><p class="muted" style="max-width:34ch;margin:14px 0 0">Your wedge yardages, built from your own shots and adjusted for today.</p></div>
+    <div><h4>Product</h4><a href="index.html">Home</a><a href="teams.html">WedgeWise Teams</a><a href="coach.html">Coach login</a></div>
+    <div><h4>Help</h4><a href="support.html">Support</a><a href="privacy.html">Privacy Policy</a><a href="mailto:wedgewisegolf@gmail.com">wedgewisegolf@gmail.com</a></div>
+  </div>
+  <div class="legal"><span>© 2026 WedgeWise LLC</span><span>Made for golfers who want to trust their numbers.</span></div>
+</div></footer>
+<script>
+/* "Get notified": saves the email to the waitlist table in Supabase (supabase/waitlist.sql). Anyone can add; nobody can read it from the website. */
+(function(){var f=document.getElementById("wl");if(!f)return;var n=document.getElementById("wl-note"),i=document.getElementById("wl-email"),b=f.querySelector("button");
+f.addEventListener("submit",function(e){e.preventDefault();var v=(i.value||"").trim().toLowerCase();
+if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){n.className="signup-note err";n.textContent="Enter a full email address, like you@email.com.";i.focus();return}
+b.disabled=true;b.textContent="Saving…";
+fetch("https://hayymoyocfbjoaifgrnf.supabase.co/rest/v1/waitlist",{method:"POST",headers:{apikey:"sb_publishable_VitLrXAoU4154mNLQxWf1g_GxGU8ON0","Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({email:v,source:"website"})})
+.then(function(r){if(r.ok||r.status===409){n.className="signup-note ok";n.textContent="You’re on the list. We’ll email you on launch day.";i.value="";b.textContent="Done"}else throw 0})
+.catch(function(){n.className="signup-note err";n.textContent="That didn’t go through. Try again in a minute, or email wedgewisegolf@gmail.com.";b.disabled=false;b.textContent="Get notified"})})})();
+</script>
 </body></html>
