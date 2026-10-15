@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>WedgeWise Teams · For college golf coaches</title>
-<meta name="description" content="Put your whole roster on WedgeWise. Every player gets Pro, and coaches see every player's wedge numbers and how consistent each one is.">
+<meta name="description" content="Put your whole roster on WedgeWise. Every player gets Pro, and coaches see every player's wedge numbers in one place.">
 <meta name="theme-color" content="#041E42">
 <link rel="icon" href="img/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<meta property="og:type" content="website"><meta property="og:site_name" content="WedgeWise"><meta property="og:title" content="WedgeWise Teams · For college golf coaches"><meta property="og:description" content="Put your whole roster on WedgeWise. Every player gets Pro, and coaches see every player's wedge numbers and how consistent each one is.">
+<meta property="og:type" content="website"><meta property="og:site_name" content="WedgeWise"><meta property="og:title" content="WedgeWise Teams · For college golf coaches"><meta property="og:description" content="Put your whole roster on WedgeWise. Every player gets Pro, and coaches see every player's wedge numbers in one place.">
 <meta property="og:url" content="https://wedgewise.app/teams.html"><meta property="og:image" content="https://wedgewise.app/img/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://wedgewise.app/img/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -229,7 +229,7 @@ footer{border-top:1px solid var(--line);background:var(--paper);padding-block:56
 .chip[aria-pressed="true"]{background:var(--bg);border-color:var(--ink);color:var(--ink);box-shadow:0 1px 3px rgba(4,30,66,.14)}
 .pickers{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;margin:4px 0 22px}
 .pickers .lab{font-size:13px;font-weight:700;color:var(--muted);margin-right:4px}
-.chart{display:grid;grid-template-columns:minmax(90px,170px) 64px 1fr 64px;gap:0;align-items:center;font-variant-numeric:tabular-nums}
+.chart{display:grid;grid-template-columns:minmax(90px,170px) 64px 1fr;gap:0;align-items:center;font-variant-numeric:tabular-nums}
 .chart .hd{font-size:12px;font-weight:700;color:var(--muted);padding:0 12px 8px 0;border-bottom:1px solid var(--line)}
 .chart .c{padding:10px 12px 10px 0;border-bottom:1px solid var(--line);min-width:0}
 .chart .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -289,7 +289,7 @@ table.roster .go{color:var(--muted);text-align:right}
 .empty-state{text-align:center;padding:36px 16px;color:var(--muted)}
 @media (max-width:900px){.tiles{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.hide-sm{display:none}}
 @media (max-width:600px){.tiles{grid-template-columns:repeat(3,1fr);gap:8px}.tile{padding:14px}.tile .big{font-size:24px}.tile .big small{font-size:13px}.tile .sub{font-size:12px;line-height:1.35}.tile .lbl{font-size:12px}.tile .lbl .i{display:none}
-  .chart{grid-template-columns:minmax(64px,96px) 40px 1fr 40px}.chart .c{padding-right:8px}.chart .hd{padding-right:8px}.chart .v{font-size:18px}.chart .nm{font-size:15px}.chart .pm{font-size:13px}
+  .chart{grid-template-columns:minmax(64px,96px) 40px 1fr}.chart .c{padding-right:8px}.chart .hd{padding-right:8px}.chart .v{font-size:18px}.chart .nm{font-size:15px}.chart .pm{font-size:13px}
   .axis span:not(:first-child):not(:last-child){display:none}.axis span:first-child{transform:none}.axis span:last-child{transform:translateX(-100%)}
   .shots{font-size:14px}.shots td,.shots th{padding:9px 4px}.shots td.muted{white-space:nowrap;font-size:13px}
   .panel{padding:18px}.mx td.cell .n{font-size:22px}}
@@ -300,17 +300,17 @@ table.roster .go{color:var(--muted);text-align:right}
   <div>
     <div class="kicker">WedgeWise for college teams</div>
     <h1 class="display" style="font-size:clamp(46px,7vw,84px);line-height:.98">Every player’s numbers.<span style="font-size:.62em">One team.</span></h1>
-    <p class="lede" style="max-width:36ch">Put your whole roster on WedgeWise. Players build their wedge yardages from their own shots, and you see every number, how consistent it is, and how it compares across the team.</p>
+    <p class="lede" style="max-width:36ch">Put your whole roster on WedgeWise. Players build their wedge yardages from their own shots, and you see every number and how it compares across the team.</p>
     <div class="row"><a class="btn" href="coach.html?start=signup">Sign up your team</a><a class="btn ghost" href="coach.html">Coach login</a></div>
   </div>
-  <div class="card reveal" role="img" aria-label="Example team comparison for sand wedge three-quarter swings: each player's carry number with a bar showing how tightly their shots land."><div class="h"><span>Coaching Dashboard · example</span><span>yd, carry</span></div><div class="t">SW · ¾ swing, across the team</div><div class="cmp"><span class="nm">Player A</span><span class="v">74</span><span class="rb" title="Player A: 74 ± 2 yd"><i style="left:36.8%;width:21.1%"></i><b style="left:47.4%"></b></span><span class="nm">Player B</span><span class="v">71</span><span class="rb" title="Player B: 71 ± 3 yd"><i style="left:15.8%;width:31.6%"></i><b style="left:31.6%"></b></span><span class="nm">Player C</span><span class="v mid">77</span><span class="rb" title="Player C: 77 ± 5 yd"><i style="left:36.8%;width:52.6%"></i><b style="left:63.2%"></b></span><span class="nm">Player D</span><span class="v">69</span><span class="rb" title="Player D: 69 ± 2 yd"><i style="left:10.5%;width:21.1%"></i><b style="left:21.1%"></b></span><span class="nm">Player E</span><span class="v">73</span><span class="rb" title="Player E: 73 ± 4 yd"><i style="left:21.1%;width:42.1%"></i><b style="left:42.1%"></b></span></div><div class="note">Pick any club and swing. Dot: the player’s number. Bar: how tightly their shots land.</div></div>
+  <div class="card reveal" role="img" aria-label="Example team comparison for sand wedge three-quarter swings: each player's carry number on one scale."><div class="h"><span>Coaching Dashboard · example</span><span>yd, carry</span></div><div class="t">SW · ¾ swing, across the team</div><div class="cmp"><span class="nm">Player A</span><span class="v">74</span><span class="rb" title="Player A: 74 yd"><b style="left:56.2%"></b></span><span class="nm">Player B</span><span class="v">71</span><span class="rb" title="Player B: 71 yd"><b style="left:37.5%"></b></span><span class="nm">Player C</span><span class="v mid">77</span><span class="rb" title="Player C: 77 yd"><b style="left:75.0%"></b></span><span class="nm">Player D</span><span class="v">69</span><span class="rb" title="Player D: 69 yd"><b style="left:25.0%"></b></span><span class="nm">Player E</span><span class="v">73</span><span class="rb" title="Player E: 73 yd"><b style="left:50.0%"></b></span></div><div class="note">Pick any club and swing. Each dot is a player’s number.</div></div>
 </div></section>
 
 <section class="s"><div class="wrap">
   <div class="head reveal"><div class="kicker" style="color:var(--gold-ink)">Why coaches use it</div><h2>Know every number on your team</h2></div>
   <div class="steps">
     <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg></div><h3>Every number in one place</h3><p class="muted">Open any player to see their carry for each wedge and swing, built from their own shots. Colors show which numbers are built on enough shots to trust.</p></div>
-    <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div><h3>See how consistent each one is</h3><p class="muted">Every number shows how tightly the player’s shots land, like 88 ± 3 yards, and whether it’s moving over the last four weeks.</p></div>
+    <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Compare the whole team</h3><p class="muted">Pick any club and swing and see every player’s number side by side, and which numbers have moved over the last four weeks.</p></div>
     <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></svg></div><h3>Fair across conditions</h3><p class="muted">Every shot is normalized to 75°F at sea level, so practice in October and a qualifier in April compare honestly.</p></div>
   </div>
 </div></section>

@@ -229,7 +229,7 @@ footer{border-top:1px solid var(--line);background:var(--paper);padding-block:56
 .chip[aria-pressed="true"]{background:var(--bg);border-color:var(--ink);color:var(--ink);box-shadow:0 1px 3px rgba(4,30,66,.14)}
 .pickers{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;margin:4px 0 22px}
 .pickers .lab{font-size:13px;font-weight:700;color:var(--muted);margin-right:4px}
-.chart{display:grid;grid-template-columns:minmax(90px,170px) 64px 1fr 64px;gap:0;align-items:center;font-variant-numeric:tabular-nums}
+.chart{display:grid;grid-template-columns:minmax(90px,170px) 64px 1fr;gap:0;align-items:center;font-variant-numeric:tabular-nums}
 .chart .hd{font-size:12px;font-weight:700;color:var(--muted);padding:0 12px 8px 0;border-bottom:1px solid var(--line)}
 .chart .c{padding:10px 12px 10px 0;border-bottom:1px solid var(--line);min-width:0}
 .chart .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -289,7 +289,7 @@ table.roster .go{color:var(--muted);text-align:right}
 .empty-state{text-align:center;padding:36px 16px;color:var(--muted)}
 @media (max-width:900px){.tiles{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.hide-sm{display:none}}
 @media (max-width:600px){.tiles{grid-template-columns:repeat(3,1fr);gap:8px}.tile{padding:14px}.tile .big{font-size:24px}.tile .big small{font-size:13px}.tile .sub{font-size:12px;line-height:1.35}.tile .lbl{font-size:12px}.tile .lbl .i{display:none}
-  .chart{grid-template-columns:minmax(64px,96px) 40px 1fr 40px}.chart .c{padding-right:8px}.chart .hd{padding-right:8px}.chart .v{font-size:18px}.chart .nm{font-size:15px}.chart .pm{font-size:13px}
+  .chart{grid-template-columns:minmax(64px,96px) 40px 1fr}.chart .c{padding-right:8px}.chart .hd{padding-right:8px}.chart .v{font-size:18px}.chart .nm{font-size:15px}.chart .pm{font-size:13px}
   .axis span:not(:first-child):not(:last-child){display:none}.axis span:first-child{transform:none}.axis span:last-child{transform:translateX(-100%)}
   .shots{font-size:14px}.shots td,.shots th{padding:9px 4px}.shots td.muted{white-space:nowrap;font-size:13px}
   .panel{padding:18px}.mx td.cell .n{font-size:22px}}
@@ -347,9 +347,9 @@ table.roster .go{color:var(--muted);text-align:right}
 
 <section class="s alt"><div class="wrap">
   <div class="teaser reveal">
-    <div><div class="kicker" style="color:var(--gold-ink)">WedgeWise Teams</div><h2>Coaching a college team?</h2><p class="lead">Put your whole roster on WedgeWise. Every player gets Pro, and you see every player’s numbers, and how consistent each one is, in one Coaching Dashboard.</p>
+    <div><div class="kicker" style="color:var(--gold-ink)">WedgeWise Teams</div><h2>Coaching a college team?</h2><p class="lead">Put your whole roster on WedgeWise. Every player gets Pro, and you see every player’s numbers in one Coaching Dashboard.</p>
       <div class="row" style="margin-top:22px"><a class="btn" href="teams.html">See WedgeWise Teams <svg class="i" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div></div>
-    <div class="card" style="box-shadow:var(--shadow);border:1px solid var(--line)"><div class="h"><span>Coaching Dashboard · example</span><span>yd, carry</span></div><div class="t">SW · ¾ swing, across the team</div><div class="cmp"><span class="nm">Player A</span><span class="v">74</span><span class="rb" title="Player A: 74 ± 2 yd"><i style="left:36.8%;width:21.1%"></i><b style="left:47.4%"></b></span><span class="nm">Player B</span><span class="v">71</span><span class="rb" title="Player B: 71 ± 3 yd"><i style="left:15.8%;width:31.6%"></i><b style="left:31.6%"></b></span><span class="nm">Player C</span><span class="v mid">77</span><span class="rb" title="Player C: 77 ± 5 yd"><i style="left:36.8%;width:52.6%"></i><b style="left:63.2%"></b></span><span class="nm">Player D</span><span class="v">69</span><span class="rb" title="Player D: 69 ± 2 yd"><i style="left:10.5%;width:21.1%"></i><b style="left:21.1%"></b></span></div><div class="note">Dot: the player’s number. Bar: how tightly their shots land.</div></div>
+    <div class="card" style="box-shadow:var(--shadow);border:1px solid var(--line)"><div class="h"><span>Coaching Dashboard · example</span><span>yd, carry</span></div><div class="t">SW · ¾ swing, across the team</div><div class="cmp"><span class="nm">Player A</span><span class="v">74</span><span class="rb" title="Player A: 74 yd"><b style="left:56.2%"></b></span><span class="nm">Player B</span><span class="v">71</span><span class="rb" title="Player B: 71 yd"><b style="left:37.5%"></b></span><span class="nm">Player C</span><span class="v mid">77</span><span class="rb" title="Player C: 77 yd"><b style="left:75.0%"></b></span><span class="nm">Player D</span><span class="v">69</span><span class="rb" title="Player D: 69 yd"><b style="left:25.0%"></b></span></div><div class="note">Each dot is a player’s number, normalized to 75°F at sea level.</div></div>
   </div>
 </div></section>
 

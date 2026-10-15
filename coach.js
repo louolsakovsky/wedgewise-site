@@ -1,7 +1,7 @@
 /* WedgeWise Coaching Dashboard. Coaches sign in with an emailed link, create their team, add players' emails,
-   share the team code, and study their players' numbers: Overview (team snapshot + compare any club and swing),
-   Players (sortable roster, then each player's numbers, consistency, trend and shots) and Team (billing, code, invites).
-   Deliberately no activity tracking (no last active, shots this week, "locked in" counts) and no gapping view: Lou, Oct 15.
+   share the team code, and study their players' numbers: Overview (compare any club and swing),
+   Players (sortable roster, then each player's numbers, trend and shots) and Team (billing, code, invites).
+   Deliberately no activity tracking (no last active, shots this week, "locked in" counts), no consistency / ± spread and no gapping view: Lou, Oct 15.
    Data rules (who can see what) live in supabase/teams.sql. */
 (function () {
   const URL = "https://hayymoyocfbjoaifgrnf.supabase.co";
@@ -45,8 +45,6 @@
   /* ---- the same math as the app: normalize to 75°F at sea level, then the median ---- */
   const factor = (t, e) => (1 + 0.010 * (t - 75) / 10) * (1 + 0.011 * e / 1000);
   const median = a => { const b = a.slice().sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
-  /* Consistency: how far a typical shot lands from the player's number (standard deviation of normalized carries), 3+ shots. */
-  const spread = a => { if (a.length < 3) return null; const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) * (y - m), 0) / (a.length - 1)); };
   const FRACTION = [{ k: "half", label: "½" }, { k: "tq", label: "¾" }, { k: "full", label: "Full" }];
   const BAG = ["LW", "SW", "GW", "PW", "9I"];
   const DAY = 864e5;
@@ -63,16 +61,13 @@
       const vals = a.map(x => x.norm), recent = a.filter(x => x.t >= cut).map(x => x.norm), older = a.filter(x => x.t < cut).map(x => x.norm);
       /* Trend: the number from the last four weeks vs. before that, when both have 3+ shots. */
       const trend = recent.length >= 3 && older.length >= 3 ? median(recent) - median(older) : null;
-      return { carry: median(vals), n: a.length, sd: spread(vals), trend, list: a.slice().sort((x, y) => y.t - x.t) };
+      return { carry: median(vals), n: a.length, trend, list: a.slice().sort((x, y) => y.t - x.t) };
     };
     const all = [];
     clubs.forEach(c => swings.forEach(w => { const x = cell(c.id, w.k); if (x) all.push({ club: c, swing: w, ...x }); }));
-    const withSd = all.filter(x => x.sd != null);
-    const avgSd = withSd.length ? withSd.reduce((s, x) => s + x.sd, 0) / withSd.length : null;
-    const tight = all.filter(x => x.sd != null && x.n >= 5).sort((a, b) => a.sd - b.sd)[0] || null;
     const prof = st.profile || {};
     const name = prof.name || p.name || "Player";
-    return { id: p.user_id, name, prof, joined: p.joined_at, swings, clubs, cell, all, avgSd, tight, hasState: !!p.state };
+    return { id: p.user_id, name, prof, joined: p.joined_at, swings, clubs, cell, all, hasState: !!p.state };
   }
   const level = n => (n >= 5 ? "hi" : n >= 2 ? "midc" : "lo");
   const initials = n => { const w = String(n).trim().split(/\s+/).filter(Boolean); return w.length ? (w[0][0] + (w.length > 1 ? w[w.length - 1][0] : "")).toUpperCase() : "?"; };
@@ -201,19 +196,11 @@
   function overviewTab() {
     const { players, t } = last;
     if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Share your team code from the Team tab. Numbers show here as players log shots.</p><button class="btn" type="button" data-tab="team">Go to Team</button></div>`;
-    const sds = players.flatMap(p => p.all.filter(x => x.sd != null).map(x => x.sd));
-    const teamSd = sds.length ? sds.reduce((a, b) => a + b, 0) / sds.length : null;
-    let best = null; players.forEach(p => { if (p.tight && (!best || p.tight.sd < best.x.sd)) best = { p, x: p.tight }; });
     const clubs = teamClubs(players), swings = teamSwings(players);
     if (!view.club || !clubs.includes(view.club)) view.club = clubs.includes("SW") ? "SW" : clubs[0];
     if (!view.swing || !swings.some(w => w.k === view.swing)) view.swing = (swings.find(w => w.k === "full") || swings[0] || {}).k;
-    return `<div class="tiles">
-        <div class="tile"><div class="lbl">${ic("team")} Players</div><div class="big">${players.length} <small>of ${t.seats}</small></div><div class="sub">spots on your team</div></div>
-        <div class="tile"><div class="lbl">${ic("target")} Team consistency</div><div class="big">${teamSd == null ? "–" : pm1(teamSd)} <small>${teamSd == null ? "" : "yd"}</small></div><div class="sub">${teamSd == null ? "Shows once players have 3+ shots on a number" : "Typical spread around each number, across the team"}</div></div>
-        <div class="tile"><div class="lbl">${ic("star")} Tightest number</div><div class="big">${best ? pm(best.x.sd) + " <small>yd</small>" : "–"}</div><div class="sub">${best ? esc(best.p.name) + " · " + esc(best.x.club.name) + " " + esc(swingName(best.x.swing)) + " (" + Math.round(best.x.carry) + " yd)" : "Shows once a number has 5+ shots"}</div></div>
-      </div>
-      <div class="panel">
-        <h3 style="margin-bottom:2px">Compare the team</h3><p class="muted" style="margin:0 0 6px;font-size:15px">Pick a club and swing to see every player’s number side by side.</p>
+    return `<div class="panel">
+        <div class="row" style="justify-content:space-between;align-items:flex-start;gap:8px"><h3 style="margin-bottom:2px">Compare the team</h3><span class="pill">${ic("team", 14)} ${players.length} of ${t.seats} players</span></div><p class="muted" style="margin:0 0 6px;font-size:15px">Pick a club and swing to see every player’s number side by side.</p>
         <div class="pickers"><div class="chips" role="group" aria-label="Club"><span class="lab" style="align-self:center">Club</span>${clubs.map(n => `<button type="button" class="chip" data-club="${esc(n)}" aria-pressed="${view.club === n}">${esc(n)}</button>`).join("")}</div>
           <div class="chips" role="group" aria-label="Swing"><span class="lab" style="align-self:center">Swing</span>${swings.map(w => `<button type="button" class="chip" data-swing="${esc(w.k)}" aria-pressed="${view.swing === w.k}">${esc(w.label)}</button>`).join("")}</div></div>
         ${compareChart(players, view.club, view.swing)}
@@ -223,19 +210,18 @@
     const rows = players.map(p => { const c = p.clubs.find(x => x.name === clubName); const x = c && p.swings.some(w => w.k === k) ? p.cell(c.id, k) : null; return x ? { p, x } : null; }).filter(Boolean).sort((a, b) => b.x.carry - a.x.carry);
     const sw = teamSwings(players).find(w => w.k === k);
     if (!rows.length) return `<div class="empty-state">No shots on ${esc(clubName)} ${esc(sw ? sw.label : "")} yet.</div>`;
-    let lo = Math.min(...rows.map(r => r.x.carry - (r.x.sd || 0))), hi = Math.max(...rows.map(r => r.x.carry + (r.x.sd || 0)));
+    let lo = Math.min(...rows.map(r => r.x.carry)), hi = Math.max(...rows.map(r => r.x.carry));
     lo = Math.floor((lo - 2) / 5) * 5; hi = Math.ceil((hi + 2) / 5) * 5; if (hi - lo < 10) hi = lo + 10;
     const pct = v => ((v - lo) / (hi - lo)) * 100;
     const step = hi - lo > 40 ? 10 : 5, ticks = []; for (let v = lo; v <= hi; v += step) ticks.push(v);
     const grid = ticks.map(v => `<span class="gl" style="left:${pct(v)}%"></span>`).join("");
-    return `<div class="chart" role="table" aria-label="${esc(clubName)} ${esc(sw ? sw.label : "")}: each player's number and consistency">
-      <div class="hd" role="columnheader">Player</div><div class="hd" role="columnheader" style="text-align:right">Yards</div><div class="hd" role="columnheader"><div class="axis">${ticks.map(v => `<span style="left:${pct(v)}%">${v}</span>`).join("")}</div></div><div class="hd" role="columnheader">Spread</div>
+    return `<div class="chart" role="table" aria-label="${esc(clubName)} ${esc(sw ? sw.label : "")}: each player's number">
+      <div class="hd" role="columnheader">Player</div><div class="hd" role="columnheader" style="text-align:right">Yards</div><div class="hd" role="columnheader"><div class="axis">${ticks.map(v => `<span style="left:${pct(v)}%">${v}</span>`).join("")}</div></div>
       ${rows.map(({ p, x }) => `<div class="c nm" role="cell"><a href="#player=${encodeURIComponent(p.id)}" data-player="${esc(p.id)}">${esc(p.name)}</a></div>
         <div class="c v ${level(x.n)}" role="cell">${Math.round(x.carry)}</div>
-        <div class="c" role="cell"><div class="rb" tabindex="0" data-tip="${esc(p.name)}: ${Math.round(x.carry)} yd · ${x.sd == null ? "needs 3 shots for spread" : pm(x.sd) + " yd"} · ${x.n} shot${x.n === 1 ? "" : "s"}">${grid}${x.sd != null ? `<i style="left:${pct(x.carry - x.sd)}%;width:${pct(x.carry + x.sd) - pct(x.carry - x.sd)}%"></i>` : ""}<b style="left:${pct(x.carry)}%"></b></div></div>
-        <div class="c pm" role="cell">${pm(x.sd)}</div>`).join("")}
+        <div class="c" role="cell"><div class="rb" tabindex="0" data-tip="${esc(p.name)}: ${Math.round(x.carry)} yd · ${x.n} shot${x.n === 1 ? "" : "s"}">${grid}<b style="left:${pct(x.carry)}%"></b></div></div>`).join("")}
     </div>
-    <div class="legend"><span><span class="dot" style="background:var(--navy)"></span>Player’s number (middle of their shots, normalized to 75°F at sea level)</span><span><span class="bar"></span>Where most of their shots land</span>
+    <div class="legend"><span><span class="dot" style="background:var(--navy)"></span>Player’s number (middle of their shots, normalized to 75°F at sea level)</span>
       <span>Number color: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> shots</span></div>`;
   }
 
@@ -244,44 +230,41 @@
     const { players } = last;
     if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Players appear here once they join with your team code.</p><button class="btn" type="button" data-tab="team">Go to Team</button></div>`;
     const q = view.q.trim().toLowerCase();
-    const key = { name: p => p.name.toLowerCase(), sd: p => (p.avgSd == null ? 1e9 : p.avgSd), joined: p => -(Date.parse(p.joined) || 0) }[view.sort];
+    const key = { name: p => p.name.toLowerCase(), joined: p => -(Date.parse(p.joined) || 0) }[view.sort] || (p => p.name.toLowerCase());
     const list = players.filter(p => !q || p.name.toLowerCase().includes(q)).sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * view.dir);
     const th = (k, l, cls = "") => `<th class="${cls}"><button type="button" data-sort="${k}" ${view.sort === k ? "data-on" : ""}>${l} ${ic("sort", 14)}</button></th>`;
     return `<div class="panel">
       <div class="row" style="justify-content:space-between;margin-bottom:14px"><h3 style="margin:0">Players</h3><input class="search" id="q" data-draft="no" type="search" placeholder="Search players" value="${esc(view.q)}" style="max-width:280px" aria-label="Search players"></div>
-      <div class="scroll"><table class="roster"><thead><tr>${th("name", "Player")}${th("sd", "Consistency")}<th class="hide-sm">Tightest number</th>${th("joined", "Joined", "hide-sm")}<th></th></tr></thead><tbody>
+      <div class="scroll"><table class="roster"><thead><tr>${th("name", "Player")}${th("joined", "Joined", "hide-sm")}<th></th></tr></thead><tbody>
       ${list.map(p => `<tr class="player" tabindex="0" data-player="${esc(p.id)}"><td><div class="who"><span class="av">${esc(initials(p.name))}</span><div><b>${esc(p.name)}</b><div class="muted" style="font-size:13px">${esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level].filter(Boolean).join(" · ") || "WedgeWise player")}</div></div></div></td>
-        <td><b>${p.avgSd == null ? "–" : pm1(p.avgSd) + " yd"}</b></td>
-        <td class="hide-sm">${p.tight ? `${esc(p.tight.club.name)} ${esc(p.tight.swing.label)} · ${Math.round(p.tight.carry)} ${pm(p.tight.sd)}` : "<span class='muted'>–</span>"}</td>
-        <td class="hide-sm muted">${p.joined ? dateShort(p.joined) : "–"}</td><td class="go">${ic("chevron")}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">No players match “${esc(view.q)}”.</td></tr>`}
+        <td class="hide-sm muted">${p.joined ? dateShort(p.joined) : "–"}</td><td class="go">${ic("chevron")}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">No players match “${esc(view.q)}”.</td></tr>`}
       </tbody></table></div>
-      <p class="muted" style="font-size:14px;margin:14px 0 0">Consistency is the typical spread of a player’s shots around their numbers (numbers with 3+ shots). Smaller is tighter.</p></div>`;
+      <p class="muted" style="font-size:14px;margin:14px 0 0">Tap a player to see their numbers.</p></div>`;
   }
 
-  /* ---------- One player: numbers, consistency, trend, shots ---------- */
+  /* ---------- One player: numbers, trend, shots ---------- */
   function playerView() {
     const p = last.players.find(x => x.id === view.player);
     if (!p) return `<button class="back" type="button" data-tab="players">${ic("back")} All players</button><div class="panel empty-state">This player isn’t on the team anymore.</div>`;
     const head = `<button class="back" type="button" data-tab="players">${ic("back")} All players</button>
       <div class="panel" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><span class="av" style="width:56px;height:56px;font-size:20px">${esc(initials(p.name))}</span>
-        <div style="flex:1;min-width:180px"><h2 style="margin:0">${esc(p.name)}</h2><div class="muted">${esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level, p.joined ? "Joined " + dateShort(p.joined) : ""].filter(Boolean).join(" · "))}</div></div>
-        <div style="text-align:right"><div class="muted" style="font-size:13px;font-weight:700">Consistency</div><div style="font-size:28px;font-weight:800">${p.avgSd == null ? "–" : pm1(p.avgSd) + " yd"}</div></div></div>`;
+        <div style="flex:1;min-width:180px"><h2 style="margin:0">${esc(p.name)}</h2><div class="muted">${esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level, p.joined ? "Joined " + dateShort(p.joined) : ""].filter(Boolean).join(" · "))}</div></div></div>`;
     if (!p.hasState || !p.clubs.length) return head + `<div class="panel empty-state">${p.hasState ? "This player hasn’t finished setup yet." : "Numbers show once the team is active and the player has logged shots."}</div>`;
     if (!view.cell || !p.all.some(x => x.club.id + "|" + x.swing.k === view.cell)) { const top = p.all.slice().sort((a, b) => b.n - a.n)[0]; view.cell = top ? top.club.id + "|" + top.swing.k : null; }
     const arrow = tr => (tr == null || Math.abs(tr) < 1 ? "" : `<span class="tr" title="${tr > 0 ? "Up" : "Down"} ${Math.round(Math.abs(tr))} yd over the last 4 weeks">${ic(tr > 0 ? "up" : "down", 12)}${Math.round(Math.abs(tr))}</span>`);
     const mx = `<div class="scroll"><table class="mx"><thead><tr><th>Club</th>${p.swings.map(w => `<th>${esc(w.label)}</th>`).join("")}</tr></thead><tbody>
       ${p.clubs.map(c => `<tr><td class="cl">${esc(c.name)}${c.loft != null ? `<small>${esc(c.loft)}°</small>` : ""}</td>${p.swings.map(w => { const x = p.cell(c.id, w.k), k = c.id + "|" + w.k; return x
-        ? `<td class="cell" tabindex="0" role="button" data-cell="${esc(k)}" aria-pressed="${view.cell === k}" aria-label="${esc(c.name)} ${esc(w.label)}: ${Math.round(x.carry)} yards, ${x.n} shots"><div class="n ${level(x.n)}">${Math.round(x.carry)}</div><div class="pm">${pm(x.sd)} ${arrow(x.trend)}</div></td>`
+        ? `<td class="cell" tabindex="0" role="button" data-cell="${esc(k)}" aria-pressed="${view.cell === k}" aria-label="${esc(c.name)} ${esc(w.label)}: ${Math.round(x.carry)} yards, ${x.n} shots"><div class="n ${level(x.n)}">${Math.round(x.carry)}</div><div class="pm">${x.n} shot${x.n === 1 ? "" : "s"} ${arrow(x.trend)}</div></td>`
         : `<td class="cell empty">–</td>`; }).join("")}</tr>`).join("")}
       </tbody></table></div>
-      <div class="legend"><span>Big number: carry in yards, normalized to 75°F at sea level</span><span>± : typical spread</span><span>${ic("up", 12)} change over the last 4 weeks</span><span>Color: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> shots</span></div>`;
+      <div class="legend"><span>Big number: carry in yards, normalized to 75°F at sea level</span><span>Small number: shots behind it</span><span>${ic("up", 12)} change over the last 4 weeks</span><span>Color: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> shots</span></div>`;
     const [cid, k] = (view.cell || "|").split("|");
     const c = p.clubs.find(x => x.id === cid), w = p.swings.find(x => x.k === k), x = c && w ? p.cell(cid, k) : null;
     return head + `<div class="grid2"><div class="panel"><h3>Numbers</h3>${mx}</div>${x ? `<div class="panel">${detail(c, w, x)}</div>` : ""}</div>`;
   }
   function detail(c, w, x) {
     const vals = x.list.map(s => s.norm);
-    let lo = Math.floor(Math.min(...vals, x.carry - (x.sd || 0)) - 2), hi = Math.ceil(Math.max(...vals, x.carry + (x.sd || 0)) + 2);
+    let lo = Math.floor(Math.min(...vals, x.carry) - 2), hi = Math.ceil(Math.max(...vals, x.carry) + 2);
     if (hi - lo < 8) { const m = (hi + lo) / 2; lo = Math.floor(m - 4); hi = Math.ceil(m + 4); }
     const pct = v => ((v - lo) / (hi - lo)) * 100;
     const step = hi - lo > 30 ? 10 : hi - lo > 14 ? 5 : 2, ticks = []; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
@@ -292,15 +275,14 @@
     return `<h3>${esc(c.name)} · ${esc(w.label === "Full" ? "Full swing" : w.label + " swing")}</h3>
       <div class="tiles" style="grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0 6px">
         <div class="tile" style="padding:14px"><div class="lbl">Number</div><div class="big" style="font-size:30px"><span class="${level(x.n)}">${Math.round(x.carry)}</span> <small>yd</small></div></div>
-        <div class="tile" style="padding:14px"><div class="lbl">Spread</div><div class="big" style="font-size:30px">${x.sd == null ? "–" : pm(x.sd)}</div><div class="sub" style="font-size:12px">${x.sd == null ? "needs 3 shots" : "yards"}</div></div>
+        <div class="tile" style="padding:14px"><div class="lbl">Shots</div><div class="big" style="font-size:30px">${x.n}</div></div>
         <div class="tile" style="padding:14px"><div class="lbl">4-week trend</div><div class="big" style="font-size:30px">${tr == null ? "–" : (tr >= 0.5 ? "+" : tr <= -0.5 ? "−" : "") + Math.round(Math.abs(tr))}</div><div class="sub" style="font-size:12px">${tr == null ? "needs 3 shots before and after" : "yards vs. before"}</div></div>
       </div>
       <div class="strip" role="img" aria-label="${x.n} shots between ${Math.round(Math.min(...vals))} and ${Math.round(Math.max(...vals))} yards; number ${Math.round(x.carry)}.">
-        ${x.sd != null ? `<span class="band" style="left:${pct(x.carry - x.sd)}%;width:${pct(x.carry + x.sd) - pct(x.carry - x.sd)}%"></span>` : ""}
         <span class="base"></span><span class="med" style="left:${pct(x.carry)}%"><span>${Math.round(x.carry)}</span></span>${dots}
         ${ticks.map(v => `<span class="tk" style="left:${pct(v)}%">${v}</span>`).join("")}
       </div>
-      <p class="muted" style="font-size:13px;margin:4px 0 16px">Each dot is a shot, normalized to 75°F at sea level. Shaded: where most shots land.</p>
+      <p class="muted" style="font-size:13px;margin:4px 0 16px">Each dot is a shot, normalized to 75°F at sea level. Dashed line: the player’s number.</p>
       <div class="scroll"><table class="shots"><thead><tr><th>Date</th><th>Conditions</th><th class="r">As hit</th><th class="r">Normalized</th></tr></thead><tbody>
         ${x.list.slice(0, 10).map(s => `<tr><td>${dateShort(s.shot.date)}</td><td class="muted">${Math.round(s.shot.tempF)}°F, ${Math.round(s.shot.elevFt).toLocaleString()} ft</td><td class="r">${Math.round(s.shot.carry)}</td><td class="r"><b>${Math.round(s.norm)}</b></td></tr>`).join("")}
       </tbody></table></div>${x.n > 10 ? `<p class="muted" style="font-size:13px;margin:8px 0 0">Latest 10 of ${x.n} shots.</p>` : ""}`;
