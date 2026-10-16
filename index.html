@@ -338,9 +338,9 @@ table.roster .go{color:var(--muted);text-align:right}
 
 <section class="s"><div class="wrap">
   <div class="formula reveal">
-    <div><div class="kicker">The adjustment, in the open</div><h2 style="color:#fff">No black box</h2><p class="muted" style="margin:0">About 1% of carry per 10°F and 1.1% per 1,000 ft of elevation, from published launch monitor research.</p></div>
-    <div><code>today = baseline<br>&nbsp;&nbsp;× (1 + 0.010 · (T − 75) / 10)<br>&nbsp;&nbsp;× (1 + 0.011 · elevation / 1000)</code>
-      <div class="factors"><div><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></svg><span><b>+1%</b> per 10°F</span></div><div><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20l6.5-11 4 6 2.5-4L21 20z"/></svg><span><b>+1.1%</b> per 1,000 ft</span></div></div>
+    <div><div class="kicker">The adjustment, in the open</div><h2 style="color:#fff">No black box</h2><p class="muted" style="margin:0">Warm air and elevation help a full swing more than a soft pitch, so the adjustment grows with how far the shot carries. Tuned to TrackMan launch monitor research.</p></div>
+    <div><code>today = baseline<br>&nbsp;&nbsp;× (1 + 0.008 · (carry / 100) · (T − 75) / 10)<br>&nbsp;&nbsp;× (1 + 0.013 · (carry / 100) · elevation / 1000)</code>
+      <div class="factors"><div><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></svg><span><b>+0.8%</b> per 10°F at 100 yd</span></div><div><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20l6.5-11 4 6 2.5-4L21 20z"/></svg><span><b>+1.3%</b> per 1,000 ft at 100 yd</span></div></div>
       <p class="muted" style="margin:16px 0 0;font-size:15px">Example: a 101-yard sand wedge at sea level and 75°F carries about 108 yards at 90°F and 5,300 ft.</p></div>
   </div>
 </div></section>
@@ -359,7 +359,7 @@ table.roster .go{color:var(--muted);text-align:right}
     <details><summary>When can I get WedgeWise?</summary><p>WedgeWise is coming soon to the App Store for iPhone. Follow along at wedgewise.app for the launch.</p></details>
     <details><summary>Is it free?</summary><p>The free version covers your lob, sand and gap wedges with the ½ · ¾ · Full system, both entry types, and your baseline numbers. WedgeWise Pro ($6.99 a month or $49.99 a year) adds the pitching wedge and 9 iron, today’s adjusted numbers, a custom swing system, and Swing Check.</p></details>
     <details><summary>Do I need a launch monitor?</summary><p>No. On-Course Entry works with just a rangefinder or the yardage on a sprinkler head: distance to the flag, and the paces from the flag to the pitch mark.</p></details>
-    <details><summary>How accurate is the temperature and elevation adjustment?</summary><p>It uses published launch monitor research: about 1% of carry per 10°F and 1.1% per 1,000 ft. Because every shot is normalized the same way, your numbers stay fair whether you practiced on a cold morning or a hot afternoon. <a href="support.html">More on the Support page</a>.</p></details>
+    <details><summary>How accurate is the temperature and elevation adjustment?</summary><p>It is tuned to TrackMan launch monitor research and ball-flight physics. A 100-yard shot moves about 0.8% per 10°F and 1.3% per 1,000 ft; longer shots move more and short pitches less, because a slower ball is less affected by the air. Because every shot is normalized the same way, your numbers stay fair whether you practiced on a cold morning or a hot afternoon. <a href="support.html">More on the Support page</a>.</p></details>
   </div>
 </div></section>
 <footer><div class="wrap">
