@@ -97,6 +97,16 @@ h3{font-weight:800;font-size:20px;line-height:1.25;margin:0 0 6px;letter-spacing
 .step .n{font-size:13px;font-weight:800;color:var(--gold-ink);letter-spacing:.1em;margin-bottom:4px}
 
 .feature{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.story{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.story p{font-size:18px;line-height:1.6;color:var(--ink);margin:0 0 16px}
+.story .sig{font-weight:800;margin-top:22px}.story .sig span{display:block;font-weight:500;color:var(--muted);font-size:15px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:26px 0 0}
+.stats div{border:1px solid var(--line);border-radius:14px;padding:16px 14px;background:var(--paper)}
+.stats b{display:block;font-size:30px;line-height:1;color:var(--ink);letter-spacing:-.02em}.stats span{display:block;margin-top:8px;font-size:14px;color:var(--muted);line-height:1.35}
+.sheet{margin:0}.sheet a{display:block;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow);background:#fff}
+.sheet img{display:block;width:100%;height:auto}.sheet figcaption{font-size:14px;color:var(--muted);margin-top:12px;line-height:1.45}
+@media (max-width:900px){.story{grid-template-columns:1fr;gap:32px}}
+@media (max-width:600px){.stats b{font-size:24px}.stats span{font-size:12.5px}.stats div{padding:12px 10px}}
 .feature+.feature{margin-top:110px}
 .feature>*{min-width:0}
 .feature.flip .shot{order:2}
@@ -337,11 +347,25 @@ table.roster .go{color:var(--muted);text-align:right}
 </div></section>
 
 <section class="s"><div class="wrap">
+  <div class="story reveal">
+    <div><div class="kicker" style="color:var(--gold-ink)">Why I built WedgeWise</div><h2>I hit it great. I didn’t trust my wedges.</h2>
+      <p>I’m Lou Olsakovsky. I started at Allegheny College, a Division III school, because no Division I program offered me a spot. I transferred to Penn State, where a COVID year gave me four seasons. I captained the team in 2021–22 and qualified for an NCAA Regional as an individual in 2022.</p>
+      <p>I struck the ball well and drove it a long way. But inside 150 yards I had doubt, and in tournaments I didn’t fully trust myself.</p>
+      <p>Before my fifth year I built a system. I learned everything I could about why a golf ball flies the distance it does, measured my own wedges, and adjusted every number for the conditions. The first version of WedgeWise was a spreadsheet.</p>
+      <p>My fifth year was my best. WedgeWise is that system, built so every player can have numbers they trust.</p>
+      <div class="stats"><div><b>6</b><span>top-15 finishes in my fifth year</span></div><div><b>72.08</b><span>scoring average, my lowest ever</span></div><div><b>1 shot</b><span>better than my senior year</span></div></div>
+      <div class="sig">Lou Olsakovsky<span>Founder · Former Penn State captain</span></div></div>
+    <figure class="sheet"><a href="img/founder-sheet.webp" target="_blank" rel="noopener"><img src="img/founder-sheet.webp" width="1169" height="620" loading="lazy" alt="Lou's original spreadsheet: carry numbers and shot counts for each wedge and effort, color-coded by how many shots each number was built on."></a>
+      <figcaption>The first version of WedgeWise: my spreadsheet of carries for every wedge and effort, adjusted for temperature and colored by how many shots were behind each number.</figcaption></figure>
+  </div>
+</div></section>
+
+<section class="s"><div class="wrap">
   <div class="formula reveal">
     <div><div class="kicker">The adjustment, in the open</div><h2 style="color:#fff">No black box</h2><p class="muted" style="margin:0">Warm air and elevation help a full swing more than a soft pitch, so the adjustment grows with how far the shot carries. Tuned to TrackMan launch monitor research.</p></div>
     <div><code>today = baseline<br>&nbsp;&nbsp;× (1 + 0.008 · (carry / 100) · (T − 75) / 10)<br>&nbsp;&nbsp;× (1 + 0.013 · (carry / 100) · elevation / 1000)</code>
       <div class="factors"><div><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></svg><span><b>+0.8%</b> per 10°F at 100 yd</span></div><div><svg class="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20l6.5-11 4 6 2.5-4L21 20z"/></svg><span><b>+1.3%</b> per 1,000 ft at 100 yd</span></div></div>
-      <p class="muted" style="margin:16px 0 0;font-size:15px">Example: a 101-yard sand wedge at sea level and 75°F carries about 108 yards at 90°F and 5,300 ft.</p></div>
+      <p class="muted" style="margin:16px 0 0;font-size:15px">Example: a 101-yard sand wedge at sea level and 75°F carries about 109 yards at 90°F and 5,300 ft.</p></div>
   </div>
 </div></section>
 

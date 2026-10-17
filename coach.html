@@ -97,6 +97,16 @@ h3{font-weight:800;font-size:20px;line-height:1.25;margin:0 0 6px;letter-spacing
 .step .n{font-size:13px;font-weight:800;color:var(--gold-ink);letter-spacing:.1em;margin-bottom:4px}
 
 .feature{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.story{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.story p{font-size:18px;line-height:1.6;color:var(--ink);margin:0 0 16px}
+.story .sig{font-weight:800;margin-top:22px}.story .sig span{display:block;font-weight:500;color:var(--muted);font-size:15px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:26px 0 0}
+.stats div{border:1px solid var(--line);border-radius:14px;padding:16px 14px;background:var(--paper)}
+.stats b{display:block;font-size:30px;line-height:1;color:var(--ink);letter-spacing:-.02em}.stats span{display:block;margin-top:8px;font-size:14px;color:var(--muted);line-height:1.35}
+.sheet{margin:0}.sheet a{display:block;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow);background:#fff}
+.sheet img{display:block;width:100%;height:auto}.sheet figcaption{font-size:14px;color:var(--muted);margin-top:12px;line-height:1.45}
+@media (max-width:900px){.story{grid-template-columns:1fr;gap:32px}}
+@media (max-width:600px){.stats b{font-size:24px}.stats span{font-size:12.5px}.stats div{padding:12px 10px}}
 .feature+.feature{margin-top:110px}
 .feature>*{min-width:0}
 .feature.flip .shot{order:2}
