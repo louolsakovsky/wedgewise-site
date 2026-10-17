@@ -69,7 +69,7 @@
     clubs.forEach(c => swings.forEach(w => { const x = cell(c.id, w.k); if (x) all.push({ club: c, swing: w, ...x }); }));
     const prof = st.profile || {};
     const name = prof.name || p.name || "Player";
-    return { id: p.user_id, name, prof, joined: p.joined_at, swings, clubs, cell, all, hasState: !!p.state };
+    return { id: p.user_id, name, prof, joined: p.joined_at, swings, clubs, cell, all, hasState: !!p.state, coach: p.role === "coach" };
   }
   const level = n => (n >= 5 ? "hi" : n >= 2 ? "midc" : "lo");
   const initials = n => { const w = String(n).trim().split(/\s+/).filter(Boolean); return w.length ? (w[0][0] + (w.length > 1 ? w[w.length - 1][0] : "")).toUpperCase() : "?"; };
@@ -121,7 +121,7 @@
     title("Set up your team");
     html(`<div class="panel" style="max-width:560px;margin-top:12px">
       <h2>Set up your team</h2>
-      <p class="muted">$499 a year for up to 12 players, then $39 for each extra player.</p>
+      <p class="muted">$499 a year for up to 12 players, plus free accounts for you and an assistant coach. $39 for each extra player.</p>
       <form id="f">
         <label class="field"><span>Team name</span><input id="tn" required maxlength="80" placeholder="Men’s Golf"></label>
         <label class="field"><span>School</span><input id="sc" required maxlength="80" placeholder="State University"></label>
@@ -196,7 +196,7 @@
   function teamClubs(players) { const s = new Set(); players.forEach(p => p.clubs.forEach(c => s.add(c.name))); return BAG.filter(n => s.has(n)).concat([...s].filter(n => !BAG.includes(n))); }
   function teamSwings(players) { const m = new Map(); FRACTION.forEach(w => m.set(w.k, w)); players.forEach(p => p.swings.forEach(w => { if (!m.has(w.k)) m.set(w.k, w); })); return [...m.values()].filter(w => players.some(p => p.swings.some(x => x.k === w.k))); }
   function overviewTab() {
-    const { players, t } = last;
+    const { t } = last; const players = last.players.filter(p => !p.coach);
     if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Share your team code from the Team tab. Numbers show here as players log shots.</p><button class="btn" type="button" data-tab="team">Go to Team</button></div>`;
     const clubs = teamClubs(players), swings = teamSwings(players);
     if (!view.club || !clubs.includes(view.club)) view.club = clubs.includes("SW") ? "SW" : clubs[0];
@@ -238,7 +238,7 @@
     return `<div class="panel">
       <div class="row" style="justify-content:space-between;margin-bottom:14px"><h3 style="margin:0">Players</h3><input class="search" id="q" data-draft="no" type="search" placeholder="Search players" value="${esc(view.q)}" style="max-width:280px" aria-label="Search players"></div>
       <div class="scroll"><table class="roster"><thead><tr>${th("name", "Player")}${th("joined", "Joined", "hide-sm")}<th></th></tr></thead><tbody>
-      ${list.map(p => `<tr class="player" tabindex="0" data-player="${esc(p.id)}"><td><div class="who"><span class="av">${esc(initials(p.name))}</span><div><b>${esc(p.name)}</b><div class="muted" style="font-size:13px">${esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level].filter(Boolean).join(" · ") || "WedgeWise player")}</div></div></div></td>
+      ${list.map(p => `<tr class="player" tabindex="0" data-player="${esc(p.id)}"><td><div class="who"><span class="av">${esc(initials(p.name))}</span><div><b>${esc(p.name)}</b>${p.coach ? ' <span class="pill">Coach</span>' : ""}<div class="muted" style="font-size:13px">${p.coach ? "Coach account" : esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level].filter(Boolean).join(" · ") || "WedgeWise player")}</div></div></div></td>
         <td class="hide-sm muted">${p.joined ? dateShort(p.joined) : "–"}</td><td class="go">${ic("chevron")}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">No players match “${esc(view.q)}”.</td></tr>`}
       </tbody></table></div>
       <p class="muted" style="font-size:14px;margin:14px 0 0">Tap a player to see their numbers.</p></div>`;
@@ -293,21 +293,24 @@
   /* ---------- Team: billing, code, invites ---------- */
   function teamTab() {
     const { session, t, active, players, inv } = last;
-    const invoiceHref = `mailto:${SUPPORT}?subject=${encodeURIComponent("WedgeWise Teams invoice: " + t.school)}&body=${encodeURIComponent("Team: " + t.name + "\nSchool: " + t.school + "\nTeam code: " + t.code + "\nPlayers: up to 12 (tell us if you need more)\nPlease send an invoice for $499.")}`;
+    const invoiceHref = `mailto:${SUPPORT}?subject=${encodeURIComponent("WedgeWise Teams invoice: " + t.school)}&body=${encodeURIComponent("Team: " + t.name + "\nSchool: " + t.school + "\nTeam code: " + t.code + "\nPlayers: up to 12, plus 2 coach accounts (tell us if you need more players)\nPlease send an invoice for $499.")}`;
     const payHref = PAY_LINK ? PAY_LINK + "?client_reference_id=" + encodeURIComponent(t.id) + "&prefilled_email=" + encodeURIComponent(session.user.email || "") : "";
     const until = t.paid_until ? new Date(t.paid_until + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
     const payBox = active ? (until ? `<p class="muted" style="font-size:15px;margin:10px 0 0">Active through ${esc(until)}.${t.stripe_subscription ? " It renews automatically each year." : ""}</p>` : "")
       : justPaid && t.status !== "ended" ? `<div class="callout" style="margin-top:16px"><b>Payment received, thank you.</b> Your team switches on in a few seconds. This page updates by itself.</div>`
       : `<div class="callout" style="margin-top:16px"><b>${t.status === "ended" ? "Your team’s year has ended." : "Switch your team on."}</b> ${t.status === "ended" ? "Renew to switch it back on for your players." : "Players can join as soon as your team is on."}
           ${payHref ? `<div class="row" style="margin-top:14px"><a class="btn" href="${esc(payHref)}">Pay $499 by card</a><a class="btn ghost" href="${invoiceHref}">Get an invoice instead</a></div>
-          <p class="muted" style="font-size:14px;margin:10px 0 0">$499 a year for up to 12 players. Need more than 12? Get an invoice and tell us how many.</p>`
+          <p class="muted" style="font-size:14px;margin:10px 0 0">$499 a year for up to 12 players, plus free accounts for you and an assistant coach. Need more than 12 players? Get an invoice and tell us how many.</p>`
           : `<p style="margin:10px 0 0"><a href="${invoiceHref}">Email us for an invoice</a> and we’ll switch the team on as soon as it’s paid.</p>`}</div>`;
     return `<div class="grid2">
       <div>
         <div class="panel"><div class="row" style="justify-content:space-between"><div><h3 style="margin:0">${esc(t.name)}</h3><div class="muted">${esc(t.school)}</div></div><span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span></div>${payBox}</div>
         <div class="panel"><h3>Team code</h3>
           <div class="row"><span class="code" aria-label="Team code ${esc(t.code.split("").join(" "))}">${esc(t.code)}</span><button class="btn ghost" id="cp" type="button">${ic("copy")} Copy invite message</button></div>
-          <p class="muted" style="font-size:15px;margin:12px 0 0">${players.length} of ${t.seats} spots used. Players enter this code in the app (Settings › Join a team) to join and get Pro.</p></div>
+          <p class="muted" style="font-size:15px;margin:12px 0 0">${players.filter(p => !p.coach).length} of ${t.seats} player spots used. Players enter this code in the app (Settings › Join a team) to join and get Pro.</p></div>
+        ${t.coach_code ? `<div class="panel"><h3>Coach code</h3>
+          <div class="row"><span class="code" aria-label="Coach code ${esc(t.coach_code.split("").join(" "))}">${esc(t.coach_code)}</span></div>
+          <p class="muted" style="font-size:15px;margin:12px 0 0">For you and your assistant coach: two free WedgeWise Pro accounts that don’t use player spots. Enter it in the app the same way (Settings › Join a team). ${players.filter(p => p.coach).length} of ${t.coach_seats || 2} used. Keep this code to your coaching staff.</p></div>` : ""}
       </div>
       <div class="panel"><h3>Invite players</h3>
         <form id="add" class="row" style="flex-wrap:nowrap"><label class="field" style="flex:1;min-width:0;margin:0"><span style="position:absolute;left:-9999px">Player email</span><input id="pe" type="email" required placeholder="player@school.edu"></label><button class="btn" type="submit">Add</button></form>
