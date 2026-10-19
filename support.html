@@ -299,6 +299,21 @@ table.roster .go{color:var(--muted);text-align:right}
 .empty-state{text-align:center;padding:36px 16px;color:var(--muted)}
 .tiles.t4{grid-template-columns:repeat(4,1fr)}
 .show-sm{display:none}
+.seg{display:inline-flex;align-items:center;gap:4px;background:var(--panel);border-radius:12px;padding:4px}
+.seg .lab{font-size:13px;font-weight:700;color:var(--muted);padding:0 8px 0 6px}
+.seg button{font:inherit;font-weight:700;font-size:14px;border:0;background:transparent;color:var(--muted);padding:9px 14px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--bg);color:var(--ink);box-shadow:0 1px 3px rgba(4,30,66,.16)}
+.seg.sm button{padding:7px 12px;font-size:13px}
+.chg{display:inline-flex;align-items:center;gap:3px;font-weight:800;white-space:nowrap;font-size:14px}
+.tile .sub .chg{font-size:14px}.tile .vs{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.ovhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+table.lb td{padding-top:12px;padding-bottom:12px}table.lb tr.player{cursor:pointer}table.lb tr.player:hover td{background:var(--panel)}
+table.lb .rk{width:34px;color:var(--muted);font-weight:700}table.lb td.big{font-size:20px;font-weight:800;white-space:nowrap}table.lb td.big small{font-size:13px;color:var(--muted)}
+.av.sm{width:32px;height:32px;font-size:12px}
+table.pt tr.worst td{background:rgba(201,164,76,.10)}table.pt tr.worst td:first-child{box-shadow:inset 3px 0 0 var(--gold);padding-left:12px}
+svg.tc .pt.hl{fill:var(--navy);stroke:var(--gold)}
+.months{flex-wrap:wrap}
+h3.sect{margin:30px 0 12px;font-size:20px}
 .chips .lab{font-size:13px;font-weight:700;color:var(--muted);margin-right:4px;align-self:center}
 table.pt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:15px}
 table.pt th{font-size:12px;font-weight:700;color:var(--muted);text-align:left;padding:0 10px 10px 0;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -333,6 +348,10 @@ svg.tc g:focus{outline:none}svg.tc g:focus .pt,svg.tc g:hover .pt{r:7}
   .shots{font-size:14px}.shots td,.shots th{padding:9px 4px}.shots td.muted{white-space:nowrap;font-size:13px}
   .panel{padding:18px}.mx td.cell .n{font-size:22px}
   .tiles.t4{grid-template-columns:repeat(2,1fr)}
+  .seg{flex-wrap:wrap}.seg .lab{width:100%;padding:4px 6px 2px}.seg button{padding:8px 10px;font-size:13px}
+  .tiles.ov{grid-template-columns:1fr 1fr}.tiles.ov .tile:first-child{grid-column:1/-1}
+  .chg{font-size:13px}
+  table.lb .rk{width:22px}table.lb td.big{font-size:17px}.av.sm{display:none}
   table.pt{font-size:14px}table.pt th.barh,table.pt td.barh{padding-left:14px;width:auto}table.pt td,table.pt th{padding-right:8px}
   .hb span,.barnote{display:none!important}
     .tabs button{padding:12px 9px;font-size:15px}

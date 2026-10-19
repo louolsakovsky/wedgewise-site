@@ -1,7 +1,7 @@
 /* WedgeWise Coaching Dashboard. Coaches sign in with an emailed link, create their team, add players' emails,
-   share the team code, and study their players' numbers: Overview (compare any club and swing),
-   Players (sortable roster, then each player's numbers, trend and shots), Proximity (how close players hit
-   approach shots in real rounds, from the app's proximity tracking; Lou, Oct 19) and Team (billing, code, invites).
+   share the team code, and study their players' results: Overview (the team inside 150 yards from real rounds:
+   who hits it closest, who is trending up or down, team trend by month, where the team loses shots; Lou, Oct 19),
+   Players (sortable roster, then each player's proximity, rounds and wedge-number matrix) and Team (billing, code, invites).
    Deliberately no activity tracking (no last active, shots this week, "locked in" counts), no consistency / ± spread and no gapping view: Lou, Oct 15.
    Data rules (who can see what) live in supabase/teams.sql. */
 (function () {
@@ -183,11 +183,12 @@
   }
 
   /* ---- what the coach is looking at; kept across refreshes ---- */
-  const view = { tab: "overview", player: null, cell: null, club: null, swing: null, sort: "name", dir: 1, q: "", lie: "all", prange: "all" };
+  const view = { tab: "overview", player: null, cell: null, club: null, swing: null, sort: "name", dir: 1, q: "", lie: "all", mode: "rounds", month: null, lsort: "closest" };
   const fromHash = () => {
     const h = location.hash.slice(1);
     if (h.startsWith("player=")) { view.tab = "players"; view.player = decodeURIComponent(h.slice(7)); }
-    else if (["overview", "players", "proximity", "team"].includes(h)) { view.tab = h; view.player = null; }
+    else if (["overview", "players", "team"].includes(h)) { view.tab = h; view.player = null; }
+    else if (h === "proximity") { view.tab = "overview"; view.player = null; }
   };
   fromHash();
   const go = (tab, player) => { view.tab = tab; view.player = player || null; if (!player) view.cell = null; const h = player ? "player=" + encodeURIComponent(player) : tab; if (location.hash.slice(1) !== h) history.pushState(null, "", "#" + h); draw(); window.scrollTo({ top: 0 }); };
@@ -213,8 +214,8 @@
     if (!last) return;
     const { t, active, players } = last;
     title(t.name, `${esc(t.school)} &nbsp;<span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span>`);
-    const tabs = [["overview", "Overview"], ["players", "Players"], ["proximity", "Proximity"], ["team", "Team"]];
-    const body = view.tab === "team" ? teamTab() : view.tab === "proximity" ? proximityTab() : view.tab === "players" ? (view.player ? playerView() : playersTab()) : overviewTab();
+    const tabs = [["overview", "Overview"], ["players", "Players"], ["team", "Team"]];
+    const body = view.tab === "team" ? teamTab() : view.tab === "players" ? (view.player ? playerView() : playersTab()) : overviewTab();
     html(`<div class="tabs" role="tablist" aria-label="Dashboard">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${view.tab === k}">${l}${k === "players" ? ` <span class="pill">${players.length}</span>` : ""}</button>`).join("")}
       <span class="sp"></span><button type="button" id="rf" title="Refresh">${ic("refresh")} <span class="hide-sm" id="upd">Refresh</span></button></div>${body}
       <p class="muted" style="font-size:14px;margin-top:28px">Signed in as ${esc(last.session.user.email)} · <a href="#" id="out">Sign out</a></p>`);
@@ -222,41 +223,6 @@
     $("rf").onclick = async () => { $("rf").disabled = true; $("rf").innerHTML = ic("refresh") + " Refreshing…"; await render(); };
     $("out").onclick = e => { e.preventDefault(); sb.auth.signOut(); };
     wire();
-  }
-
-  /* ---------- Overview: team snapshot + compare any club and swing ---------- */
-  function teamClubs(players) { const s = new Set(); players.forEach(p => p.clubs.forEach(c => s.add(c.name))); return BAG.filter(n => s.has(n)).concat([...s].filter(n => !BAG.includes(n))); }
-  function teamSwings(players) { const m = new Map(); FRACTION.forEach(w => m.set(w.k, w)); players.forEach(p => p.swings.forEach(w => { if (!m.has(w.k)) m.set(w.k, w); })); return [...m.values()].filter(w => players.some(p => p.swings.some(x => x.k === w.k))); }
-  function overviewTab() {
-    const { t } = last; const players = last.players.filter(p => !p.coach);
-    if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Share your team code from the Team tab. Numbers show here as players log shots.</p><button class="btn" type="button" data-tab="team">Go to Team</button></div>`;
-    const clubs = teamClubs(players), swings = teamSwings(players);
-    if (!view.club || !clubs.includes(view.club)) view.club = clubs.includes("SW") ? "SW" : clubs[0];
-    if (!view.swing || !swings.some(w => w.k === view.swing)) view.swing = (swings.find(w => w.k === "full") || swings[0] || {}).k;
-    return `<div class="panel">
-        <div class="row" style="justify-content:space-between;align-items:flex-start;gap:8px"><h3 style="margin-bottom:2px">Compare the team</h3><span class="pill">${ic("team", 14)} ${players.length} of ${t.seats} players</span></div><p class="muted" style="margin:0 0 6px;font-size:15px">Pick a club and swing to see every player’s number side by side.</p>
-        <div class="pickers"><div class="chips" role="group" aria-label="Club"><span class="lab" style="align-self:center">Club</span>${clubs.map(n => `<button type="button" class="chip" data-club="${esc(n)}" aria-pressed="${view.club === n}">${esc(n)}</button>`).join("")}</div>
-          <div class="chips" role="group" aria-label="Swing"><span class="lab" style="align-self:center">Swing</span>${swings.map(w => `<button type="button" class="chip" data-swing="${esc(w.k)}" aria-pressed="${view.swing === w.k}">${esc(w.label)}</button>`).join("")}</div></div>
-        ${compareChart(players, view.club, view.swing)}
-      </div>`;
-  }
-  function compareChart(players, clubName, k) {
-    const rows = players.map(p => { const c = p.clubs.find(x => x.name === clubName); const x = c && p.swings.some(w => w.k === k) ? p.cell(c.id, k) : null; return x ? { p, x } : null; }).filter(Boolean).sort((a, b) => b.x.carry - a.x.carry);
-    const sw = teamSwings(players).find(w => w.k === k);
-    if (!rows.length) return `<div class="empty-state">No shots on ${esc(clubName)} ${esc(sw ? sw.label : "")} yet.</div>`;
-    let lo = Math.min(...rows.map(r => r.x.carry)), hi = Math.max(...rows.map(r => r.x.carry));
-    lo = Math.floor((lo - 2) / 5) * 5; hi = Math.ceil((hi + 2) / 5) * 5; if (hi - lo < 10) hi = lo + 10;
-    const pct = v => ((v - lo) / (hi - lo)) * 100;
-    const step = hi - lo > 40 ? 10 : 5, ticks = []; for (let v = lo; v <= hi; v += step) ticks.push(v);
-    const grid = ticks.map(v => `<span class="gl" style="left:${pct(v)}%"></span>`).join("");
-    return `<div class="chart" role="table" aria-label="${esc(clubName)} ${esc(sw ? sw.label : "")}: each player's number">
-      <div class="hd" role="columnheader">Player</div><div class="hd" role="columnheader" style="text-align:right">Yards</div><div class="hd" role="columnheader"><div class="axis">${ticks.map(v => `<span style="left:${pct(v)}%">${v}</span>`).join("")}</div></div>
-      ${rows.map(({ p, x }) => `<div class="c nm" role="cell"><a href="#player=${encodeURIComponent(p.id)}" data-player="${esc(p.id)}">${esc(p.name)}</a></div>
-        <div class="c v ${level(x.n)}" role="cell">${Math.round(x.carry)}</div>
-        <div class="c" role="cell"><div class="rb" tabindex="0" data-tip="${esc(p.name)}: ${Math.round(x.carry)} yd · ${x.n} shot${x.n === 1 ? "" : "s"}">${grid}<b style="left:${pct(x.carry)}%"></b></div></div>`).join("")}
-    </div>
-    <div class="legend"><span><span class="dot" style="background:var(--navy)"></span>Player’s number (middle of their shots, normalized to 75°F at sea level)</span>
-      <span>Number color: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> shots</span></div>`;
   }
 
   /* ---------- Players: sortable roster ---------- */
@@ -273,7 +239,7 @@
       ${list.map(p => `<tr class="player" tabindex="0" data-player="${esc(p.id)}"><td><div class="who"><span class="av">${esc(initials(p.name))}</span><div><b>${esc(p.name)}</b>${p.coach ? ' <span class="pill">Coach</span>' : ""}<div class="muted" style="font-size:13px">${p.coach ? "Coach account" : esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level].filter(Boolean).join(" · ") || "WedgeWise player")}</div></div></div></td>
         <td class="hide-sm muted">${p.joined ? dateShort(p.joined) : "–"}</td><td class="go">${ic("chevron")}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">No players match “${esc(view.q)}”.</td></tr>`}
       </tbody></table></div>
-      <p class="muted" style="font-size:14px;margin:14px 0 0">Tap a player to see their numbers.</p></div>`;
+      <p class="muted" style="font-size:14px;margin:14px 0 0">Tap a player to see their proximity and wedge numbers.</p></div>`;
   }
 
   /* ---------- One player: numbers, trend, shots ---------- */
@@ -294,7 +260,8 @@
       <div class="legend"><span>Big number: carry in yards, normalized to 75°F at sea level</span><span>Small number: shots behind it</span><span>${ic("up", 12)} change over the last 4 weeks</span><span>Color: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> shots</span></div>`;
     const [cid, k] = (view.cell || "|").split("|");
     const c = p.clubs.find(x => x.id === cid), w = p.swings.find(x => x.k === k), x = c && w ? p.cell(cid, k) : null;
-    return head + `<div class="grid2"><div class="panel"><h3>Numbers</h3>${mx}</div>${x ? `<div class="panel">${detail(c, w, x)}</div>` : ""}</div>` + playerProx(p);
+    /* Proximity (real-round results) first, then the wedge numbers (Lou, Oct 19). */
+    return head + playerProx(p) + `<h3 class="sect">Wedge numbers</h3><div class="grid2"><div class="panel"><h3>Numbers</h3>${mx}</div>${x ? `<div class="panel">${detail(c, w, x)}</div>` : ""}</div>`;
   }
   function detail(c, w, x) {
     const vals = x.list.map(s => s.norm);
@@ -351,56 +318,110 @@
     </tbody></table></div>
     <div class="legend"><span class="barnote">Bar: average distance from the hole after the approach. Shorter is closer.</span><span>Dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span>${tr ? `<span class="hide-sm">Vs before: last 5 rounds vs older rounds</span>` : ""}</div>`;
   }
-  function proximityTab() {
+  /* ---------- Overview: the team inside 150 yards, from real rounds (Lou, Oct 19) ----------
+     Lou: a coach decides on who hits it closest, who is trending better or worse, and whether the team is improving.
+     Two ways to judge "trending": each player's last 5 rounds vs their earlier rounds, or one month vs the month before.
+     The wedge-number compare chart was removed; each player's number matrix stays on their Players page. */
+  const monthKey = d => String(d || "").slice(0, 7);
+  const monthName = (k, long) => { const t = new Date(k + "-15T12:00:00"); return isNaN(t) ? k : t.toLocaleDateString(undefined, long ? { month: "long", year: "numeric" } : { month: "short", year: "numeric" }); };
+  const prevMonth = k => { const [y, m] = k.split("-").map(Number); const d = new Date(y, m - 2, 15); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
+  const inMonth = (rounds, k) => rounds.filter(r => monthKey(r.day) === k);
+  /* Change in feet (negative = closer), or null when either side has fewer than 3 approaches. */
+  const change = (a, b) => { const x = pstat(a), y = pstat(b); return x.n >= 3 && y.n >= 3 ? Math.round(x.avg) - Math.round(y.avg) : null; };
+  const chg = (d, short) => d == null ? `<span class="muted">–</span>` : d === 0 ? `<span class="muted">${short ? "Same" : "Same as before"}</span>`
+    : `<span class="chg ${d < 0 ? "hi" : "lo"}">${ic(d < 0 ? "down" : "up", 13)}${Math.abs(d)} ft ${d < 0 ? "closer" : "farther"}</span>`;
+  function overviewTab() {
     const players = last.players.filter(p => !p.coach);
     const withRounds = players.filter(p => p.rounds.length);
-    const head = `<div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px"><div><h3 style="margin:0 0 4px">Proximity</h3>
-      <p class="muted" style="margin:0;font-size:15px;max-width:620px">How close your players hit approach shots in real rounds: distance to the hole before the shot, and how far from the hole it finished. Players log these in the app after each round.</p></div></div>`;
-    if (!withRounds.length) return `<div class="panel">${head}<div class="empty-state"><p style="margin:0">No rounds logged yet. Players add them in the app under Data entry › Proximity.</p></div></div>`;
-    const all = shotsOf(withRounds.flatMap(p => p.rounds));
-    const team = pstat(all);
-    if (view.prange !== "all" && !PROX_RANGES.some(r => r.k === view.prange)) view.prange = "all";
-    return `<div class="panel">${head}<div class="pickers" style="margin:18px 0 20px">${lieChips()}</div>
-        ${proxTiles(team, false, null)}
-        <p class="muted" style="font-size:13px;margin:-6px 0 0">Team totals: every approach${lieWord()} from ${withRounds.length} of ${players.length} player${players.length === 1 ? "" : "s"}.</p></div>
-      <div class="panel"><h3>By distance</h3><p class="muted" style="margin:0 0 16px;font-size:15px">The whole team, grouped by how far the approach was from the hole.</p>${byDistance(all)}</div>
-      <div class="panel"><h3 style="margin-bottom:2px">Compare players</h3><p class="muted" style="margin:0 0 6px;font-size:15px">Each player’s average proximity. Closest first.</p>
-        <div class="pickers"><div class="chips" role="group" aria-label="Distance"><span class="lab">Yards</span>${[["all", "All"]].concat(PROX_RANGES.map(r => [r.k, r.label])).map(([k, l]) => `<button type="button" class="chip" data-prange="${k}" aria-pressed="${view.prange === k}">${l}</button>`).join("")}</div></div>
-        ${proxCompare(withRounds)}</div>`;
+    const head = (extra = "") => `<div class="ovhead"><div><h3 style="margin:0 0 4px">Your team inside 150 yards</h3>
+      <p class="muted" style="margin:0;font-size:15px;max-width:640px">How close your players hit approach shots in real rounds. Players log them in the app after each round (Data entry › Proximity).</p></div>${extra}</div>`;
+    if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Share your team code from the Team tab. Results show here as players log rounds.</p><button class="btn" type="button" data-tab="team">Go to Team</button></div>`;
+    if (!withRounds.length) return `<div class="panel">${head()}<div class="empty-state"><p style="margin:0">No rounds logged yet. Once players log approach shots from their rounds, you’ll see who hits it closest and who’s trending up or down.</p></div></div>`;
+    /* Months with any approach (lie filter applied), newest first. */
+    const months = [...new Set(withRounds.flatMap(p => p.rounds.filter(r => r.shots.some(lieOk)).map(r => monthKey(r.day))))].sort().reverse();
+    if (view.mode === "month" && (!view.month || !months.includes(view.month))) view.month = months[0];
+    const M = view.mode === "month" ? view.month : null, P = M ? prevMonth(M) : null;
+    /* Per player: the period's shots, and the change vs before. */
+    const rows = withRounds.map(p => {
+      const now = M ? shotsOf(inMonth(p.rounds, M)) : shotsOf(p.rounds);
+      const d = M ? change(now, shotsOf(inMonth(p.rounds, P))) : change(shotsOf(p.rounds.slice(0, 5)), shotsOf(p.rounds.slice(5)));
+      return { p, st: pstat(now), d };
+    });
+    const live = rows.filter(r => r.st.n);
+    const teamNow = M ? shotsOf(withRounds.flatMap(p => inMonth(p.rounds, M))) : shotsOf(withRounds.flatMap(p => p.rounds));
+    const teamD = M ? change(teamNow, shotsOf(withRounds.flatMap(p => inMonth(p.rounds, P))))
+      : change(shotsOf(withRounds.flatMap(p => p.rounds.slice(0, 5))), shotsOf(withRounds.flatMap(p => p.rounds.slice(5))));
+    const team = pstat(teamNow);
+    const vsWhat = M ? `vs ${monthName(P, true)}` : "last 5 rounds vs earlier rounds";
+    const modeBar = `<div class="pickers" style="margin:20px 0 22px">
+        <div class="seg" role="group" aria-label="Compare"><span class="lab">Compare</span><button type="button" data-mode="rounds" aria-pressed="${!M}">Last 5 rounds vs earlier</button><button type="button" data-mode="month" aria-pressed="${!!M}">Month by month</button></div>
+        ${lieChips()}</div>
+      ${M ? `<div class="chips months" role="group" aria-label="Month" style="margin:-8px 0 22px"><span class="lab">Month</span>${months.slice(0, 12).map(k => `<button type="button" class="chip" data-month="${k}" aria-pressed="${k === M}">${esc(monthName(k))}</button>`).join("")}</div>` : ""}`;
+    /* Tiles: team average + change, greens, inside 20 ft. */
+    const t = (lbl, big, sub) => `<div class="tile"><div class="lbl">${lbl}</div><div class="big">${big}</div><div class="sub">${sub}</div></div>`;
+    const tiles = `<div class="tiles ov">
+      ${t("Team average proximity", team.avg == null ? "–" : `${Math.round(team.avg)} <small>ft</small>`, teamD == null ? (M ? `${team.n} approach${team.n === 1 ? "" : "es"} in ${esc(monthName(M, true))}` : `${team.n} approaches`) : chg(teamD) + `<span class="vs">${esc(vsWhat)}</span>`)}
+      ${t("Greens hit", team.n ? pct(team.green) : "–", team.n ? `plus ${pct(team.fringe)} on the fringe` : "&nbsp;")}
+      ${t("Inside 20 ft", team.n ? pct(team.in20 / team.n) : "–", team.n ? `${team.in20} of ${team.n} approaches` : "&nbsp;")}
+    </div>`;
+    /* Team trend: month by month (always; it's the season at a glance). */
+    const monthPts = months.slice(0, 12).reverse().map(k => { const st = pstat(shotsOf(withRounds.flatMap(p => inMonth(p.rounds, k)))); return st.n ? { label: monthName(k), y: st.avg, tip: `${monthName(k, true)}: ${Math.round(st.avg)} ft team average over ${st.n} approaches`, hl: k === M } : null; }).filter(Boolean);
+    const trendPanel = `<div class="panel"><h3 style="margin-bottom:2px">Team trend</h3><p class="muted" style="margin:0 0 12px;font-size:15px">Team average proximity, month by month${lieWord()}.</p>
+      ${monthPts.length >= 2 ? lineChart(monthPts, "Team average proximity by month", true) : `<div class="empty-state" style="padding:28px 8px">The trend line shows once there are rounds in 2 different months.</div>`}</div>`;
+    /* Leaderboard. */
+    const sort = view.lsort === "improved" ? (a, b) => (a.d == null) - (b.d == null) || (a.d - b.d) || (a.st.avg - b.st.avg) : (a, b) => a.st.avg - b.st.avg;
+    const lb = live.slice().sort(sort);
+    const missing = players.length - live.length;
+    const board = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px"><div><h3 style="margin:0 0 2px">Players</h3>
+        <p class="muted" style="margin:0;font-size:15px">${M ? `${esc(monthName(M, true))}: average proximity and change ${esc(vsWhat)}.` : "Average proximity across all rounds, and change over the last 5 rounds vs earlier rounds."}</p></div>
+        <div class="seg sm" role="group" aria-label="Sort players"><button type="button" data-lsort="closest" aria-pressed="${view.lsort !== "improved"}">Closest</button><button type="button" data-lsort="improved" aria-pressed="${view.lsort === "improved"}">Most improved</button></div></div>
+      ${lb.length ? `<div class="scroll"><table class="pt lb"><thead><tr><th class="rk">#</th><th>Player</th><th class="r">Average</th><th class="r">Change</th><th class="r hide-sm">Greens</th><th class="r hide-sm">Approaches</th></tr></thead><tbody>
+        ${lb.map((r, i) => `<tr class="player" tabindex="0" data-player="${esc(r.p.id)}"><td class="rk">${i + 1}</td><td><div class="who"><span class="av sm">${esc(initials(r.p.name))}</span><b>${esc(r.p.name)}</b></div></td>
+          <td class="r big">${Math.round(r.st.avg)}<small> ft</small></td><td class="r">${chg(r.d, true)}</td><td class="r hide-sm">${pct(r.st.green)}</td><td class="r hide-sm"><span class="cnt"><i class="${level(r.st.n)}"></i>${r.st.n}</span></td></tr>`).join("")}
+      </tbody></table></div>` : `<div class="empty-state">No approaches${lieWord()} ${M ? "in " + esc(monthName(M, true)) : ""} yet.</div>`}
+      <div class="legend"><span>Change needs 3+ approaches on each side.</span>${missing > 0 ? `<span>${missing} player${missing === 1 ? " has" : "s have"} no approaches${lieWord()}${M ? " this month" : ""} yet.</span>` : ""}<span class="hide-sm">Approaches dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b></span><span>Tap a player for their rounds and wedge numbers.</span></div></div>`;
+    /* Where the team loses shots: by distance, with change. */
+    const dist = byDistanceTeam(withRounds, M, P);
+    return `<div class="panel">${head()}${modeBar}${tiles}</div>${trendPanel}${board}
+      <div class="panel"><h3 style="margin-bottom:2px">Where the team loses shots</h3><p class="muted" style="margin:0 0 16px;font-size:15px">The whole team by distance to the hole${M ? `, ${esc(monthName(M, true))}` : ""}. Longest bar = the range to practice.</p>${dist}</div>`;
   }
-  function proxCompare(players) {
-    const rows = players.map(p => { const st = pstat(shotsOf(p.rounds).filter(x => view.prange === "all" || proxRange(x.yd) === view.prange)); return st.n ? { p, st } : null; }).filter(Boolean).sort((a, b) => a.st.avg - b.st.avg);
-    const rl = view.prange === "all" ? "" : (PROX_RANGES.find(r => r.k === view.prange) || {}).label + " yd ";
-    if (!rows.length) return `<div class="empty-state">No ${esc(rl)}approaches${lieWord()} yet.</div>`;
-    const hi = Math.max(20, Math.ceil((Math.max(...rows.map(r => r.st.avg)) + 3) / 10) * 10);
-    const pc = v => (v / hi) * 100, step = hi > 60 ? 20 : 10, ticks = []; for (let v = 0; v <= hi; v += step) ticks.push(v);
-    const grid = ticks.map(v => `<span class="gl" style="left:${pc(v)}%"></span>`).join("");
-    return `<div class="chart pc" role="table" aria-label="Average proximity by player">
-      <div class="hd" role="columnheader">Player</div><div class="hd" role="columnheader" style="text-align:right">Avg</div><div class="hd" role="columnheader" style="text-align:right">Greens</div><div class="hd ah" role="columnheader"><div class="axis">${ticks.map(v => `<span style="left:${pc(v)}%">${v} ft</span>`).join("")}</div></div>
-      ${rows.map(({ p, st }) => `<div class="c nm" role="cell"><a href="#player=${encodeURIComponent(p.id)}" data-player="${esc(p.id)}">${esc(p.name)}</a></div>
-        <div class="c v" role="cell"><span class="cnt"><i class="${level(st.n)}"></i></span>${Math.round(st.avg)}<small> ft</small></div>
-        <div class="c gr" role="cell">${pct(st.green)}</div>
-        <div class="c bc" role="cell"><div class="rb" tabindex="0" data-tip="${esc(p.name)}: ${Math.round(st.avg)} ft average · ${st.n} approach${st.n === 1 ? "" : "es"} · ${pct(st.green)} greens">${grid}<b style="left:${pc(st.avg)}%"></b></div></div>`).join("")}
-    </div>
-    <div class="legend"><span><span class="dot" style="background:var(--navy)"></span>Average distance from the hole (closer to the left is better)</span><span>Dot by the number: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span></div>`;
+  function byDistanceTeam(players, M, P) {
+    const nowR = M ? players.flatMap(p => inMonth(p.rounds, M)) : players.flatMap(p => p.rounds);
+    const now = shotsOf(nowR);
+    const sideA = M ? shotsOf(players.flatMap(p => inMonth(p.rounds, M))) : shotsOf(players.flatMap(p => p.rounds.slice(0, 5)));
+    const sideB = M ? shotsOf(players.flatMap(p => inMonth(p.rounds, P))) : shotsOf(players.flatMap(p => p.rounds.slice(5)));
+    const rows = PROX_RANGES.map(r => { const f = x => proxRange(x.yd) === r.k; return { r, st: pstat(now.filter(f)), d: change(sideA.filter(f), sideB.filter(f)) }; }).filter(x => x.r.k !== "u50" || x.st.n);
+    const top = Math.ceil(Math.max(30, ...rows.map(x => x.st.avg || 0)) / 10) * 10;
+    const worst = rows.filter(x => x.st.n >= 3).sort((a, b) => b.st.avg - a.st.avg)[0];
+    return `<div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">Average proximity <span class="muted">(0–${top} ft)</span></span><span class="show-sm">Average</span></th><th class="r hide-sm">Greens</th><th class="r">Change</th></tr></thead><tbody>
+      ${rows.map(({ r, st, d }) => `<tr${worst && worst.r.k === r.k ? ' class="worst"' : ""}><td class="yd">${r.label}</td>
+        <td class="r"><span class="cnt"><i class="${level(st.n)}"></i>${st.n}</span></td>
+        <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft average over ${st.n} approach${st.n === 1 ? "" : "es"}" tabindex="0"><span style="width:${Math.max(2, (st.avg / top) * 100)}%"></span><b>${Math.round(st.avg)} ft</b></div>`}</td>
+        <td class="r hide-sm">${st.n ? pct(st.green) : "–"}</td><td class="r">${chg(d, true)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="legend"><span class="barnote">Bar: average distance from the hole after the approach. Shorter is closer.</span><span>Dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span></div>`;
   }
-  /* Last 10 rounds as a simple line: one dot per round, its average proximity. Higher = farther from the hole. */
-  function proxTrendChart(rounds) {
-    const pts = rounds.slice(0, 10).map(r => ({ r, st: pstat(r.shots.filter(lieOk)) })).filter(x => x.st.n).reverse();
-    if (pts.length < 2) return `<div class="empty-state" style="padding:28px 8px">The trend shows once there are 2 rounds${lieWord()}.</div>`;
-    /* Drawn at the real page width so the labels stay readable on phones and big screens alike. */
+  /* A plain line chart: one dot per point, labeled with its value. Higher = farther from the hole.
+     Drawn at the real page width so labels stay readable on phones and big screens. */
+  function lineChart(pts, aria, everyLabel) {
     const W = Math.max(300, Math.min(940, (app.clientWidth || 900) - 50)), H = W < 500 ? 220 : 260, L = 46, R = 22, T = 28, B = 40;
-    const vals = pts.map(x => x.st.avg), max = Math.max(...vals), min = Math.min(...vals);
+    const vals = pts.map(x => x.y), max = Math.max(...vals), min = Math.min(...vals);
     const lo = Math.max(0, min - Math.max(4, (max - min) * 0.35)), hi = max + Math.max(4, (max - min) * 0.35);
-    const X = i => L + (pts.length === 1 ? 0 : (i / (pts.length - 1)) * (W - L - R)), Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
-    const line = pts.map((x, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(x.st.avg).toFixed(1)}`).join(" ");
-    return `<svg class="tc" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Average proximity for the last ${pts.length} rounds, from ${Math.round(pts[0].st.avg)} feet to ${Math.round(pts[pts.length - 1].st.avg)} feet">
+    const X = i => L + 14 + (pts.length === 1 ? 0 : (i / (pts.length - 1)) * (W - L - R - 28)), Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+    const line = pts.map((x, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(x.y).toFixed(1)}`).join(" ");
+    const showLbl = i => everyLabel ? (pts.length <= 8 || W >= 600 || i % 2 === (pts.length - 1) % 2) : i === 0 || i === pts.length - 1;
+    return `<svg class="tc" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(aria)}: from ${Math.round(pts[0].y)} feet to ${Math.round(pts[pts.length - 1].y)} feet">
       <line x1="${L}" y1="${T - 8}" x2="${L}" y2="${H - B}" class="ax"/><line x1="${L}" y1="${H - B}" x2="${W - R + 8}" y2="${H - B}" class="ax"/>
       <text class="axt" transform="translate(16 ${(T + H - B) / 2}) rotate(-90)" text-anchor="middle">Proximity (ft)</text>
       <path d="${line}" class="ln"/>
-      ${pts.map((x, i) => `<g tabindex="0" data-tip="${esc(dayLong(x.r.day))} · ${esc(x.r.course && x.r.course.name || "")}: ${Math.round(x.st.avg)} ft over ${x.st.n} approach${x.st.n === 1 ? "" : "es"}"><circle cx="${X(i).toFixed(1)}" cy="${Y(x.st.avg).toFixed(1)}" r="5.5" class="pt"/><text x="${X(i).toFixed(1)}" y="${(Y(x.st.avg) - 12).toFixed(1)}" text-anchor="middle" class="pl">${Math.round(x.st.avg)}</text></g>`).join("")}
-      <text x="${X(0)}" y="${H - 14}" text-anchor="start" class="dt">${esc(dayShort(pts[0].r.day))}</text><text x="${X(pts.length - 1)}" y="${H - 14}" text-anchor="end" class="dt">${esc(dayShort(pts[pts.length - 1].r.day))}</text>
+      ${pts.map((x, i) => `<g tabindex="0" data-tip="${esc(x.tip)}"><circle cx="${X(i).toFixed(1)}" cy="${Y(x.y).toFixed(1)}" r="${x.hl ? 7 : 5.5}" class="pt${x.hl ? " hl" : ""}"/><text x="${X(i).toFixed(1)}" y="${(Y(x.y) - 13).toFixed(1)}" text-anchor="middle" class="pl">${Math.round(x.y)}</text></g>`).join("")}
+      ${pts.map((x, i) => showLbl(i) ? `<text x="${X(i).toFixed(1)}" y="${H - 14}" text-anchor="middle" class="dt">${esc(x.label)}</text>` : "").join("")}
     </svg>`;
+  }
+  function proxTrendChart(rounds) {
+    const pts = rounds.slice(0, 10).map(r => ({ r, st: pstat(r.shots.filter(lieOk)) })).filter(x => x.st.n).reverse();
+    if (pts.length < 2) return `<div class="empty-state" style="padding:28px 8px">The trend shows once there are 2 rounds${lieWord()}.</div>`;
+    return lineChart(pts.map(x => ({ label: dayShort(x.r.day), y: x.st.avg, tip: `${dayLong(x.r.day)} · ${(x.r.course && x.r.course.name) || ""}: ${Math.round(x.st.avg)} ft over ${x.st.n} approach${x.st.n === 1 ? "" : "es"}` })), "Average proximity by round", false);
   }
   function playerProx(p) {
     const head = `<h3 style="margin:0 0 4px">Proximity</h3><p class="muted" style="margin:0;font-size:15px">Approach shots from real rounds: how far from the hole they finished.</p>`;
@@ -452,10 +473,11 @@
       const open = e => { e.preventDefault(); go("players", el.dataset.player); };
       el.onclick = open; if (el.tagName === "TR") el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") open(e); };
     });
-    app.querySelectorAll("[data-club]").forEach(b => b.onclick = () => { view.club = b.dataset.club; draw(); });
-    app.querySelectorAll("[data-swing]").forEach(b => b.onclick = () => { view.swing = b.dataset.swing; draw(); });
     app.querySelectorAll("[data-lie]").forEach(b => b.onclick = () => { view.lie = b.dataset.lie; const y = window.scrollY; draw(); window.scrollTo({ top: y }); });
-    app.querySelectorAll("[data-prange]").forEach(b => b.onclick = () => { view.prange = b.dataset.prange; const y = window.scrollY; draw(); window.scrollTo({ top: y }); });
+    const keep = f => b => b.onclick = () => { f(b); const y = window.scrollY; draw(); window.scrollTo({ top: y }); };
+    app.querySelectorAll("[data-mode]").forEach(keep(b => { view.mode = b.dataset.mode; }));
+    app.querySelectorAll("[data-month]").forEach(keep(b => { view.month = b.dataset.month; }));
+    app.querySelectorAll("[data-lsort]").forEach(keep(b => { view.lsort = b.dataset.lsort; }));
     app.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => { if (view.sort === b.dataset.sort) view.dir *= -1; else { view.sort = b.dataset.sort; view.dir = 1; } draw(); });
     app.querySelectorAll("[data-cell]").forEach(td => { const pick = () => { view.cell = td.dataset.cell; draw(); }; td.onclick = pick; td.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } }; });
     const q = $("q"); if (q) q.oninput = () => { view.q = q.value; const pos = q.selectionStart; draw(); const n = $("q"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {} };
