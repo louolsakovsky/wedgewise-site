@@ -1,4 +1,4 @@
-/* WedgeWise Coaching Dashboard. Coaches sign in with an emailed link, create their team, add players' emails,
+/* WedgeLab Coaching Dashboard. Coaches sign in with an emailed link, create their team, add players' emails,
    share the team code, and study their players' results: Overview (the team inside 150 yards from real rounds:
    who hits it closest, who is trending up or down, team trend by month, where the team loses shots; Lou, Oct 19),
    Players (sortable roster, then each player's proximity, rounds and wedge-number matrix) and Team (billing, code, invites).
@@ -8,7 +8,7 @@
   const URL = "https://hayymoyocfbjoaifgrnf.supabase.co";
   const KEY = "sb_publishable_VitLrXAoU4154mNLQxWf1g_GxGU8ON0";
   const SUPPORT = "wedgewisegolf@gmail.com";
-  /* Stripe Payment Link for "WedgeWise Teams, $499 a year". Empty = card payment not switched on yet (invoice only).
+  /* Stripe Payment Link for "WedgeLab Teams, $499 a year". Empty = card payment not switched on yet (invoice only).
      The team's id rides along as client_reference_id, so the stripe-webhook function knows which team to switch on. */
   const PAY_LINK = "https://buy.stripe.com/test_14A28s75Z7il09x2UF7ok00";
   const justPaid = /[?&]paid=1/.test(location.search);
@@ -136,7 +136,7 @@
       <form id="f"><label class="field"><span>Email</span><input id="em" type="email" autocomplete="email" required placeholder="coach@school.edu"></label>
       <button class="btn" type="submit">${up ? "Email me a sign-up link" : "Email me a login link"}</button></form>
       <p id="m" class="${msg && msg.ok ? "ok" : "err"}">${esc(msg ? msg.text : "")}</p>
-      <p class="muted" style="font-size:14px;margin-bottom:0">Open the link on this same device. ${up ? "" : "New here? Tap Sign up. "}<a href="teams.html">About WedgeWise Teams</a></p></div>`);
+      <p class="muted" style="font-size:14px;margin-bottom:0">Open the link on this same device. ${up ? "" : "New here? Tap Sign up. "}<a href="teams.html">About WedgeLab Teams</a></p></div>`);
     $("t-in").onclick = () => { mode = "login"; login(); };
     $("t-up").onclick = () => { mode = "signup"; login(); };
     $("f").onsubmit = async e => {
@@ -236,7 +236,7 @@
     return `<div class="panel">
       <div class="row" style="justify-content:space-between;margin-bottom:14px"><h3 style="margin:0">Players</h3><input class="search" id="q" data-draft="no" type="search" placeholder="Search players" value="${esc(view.q)}" style="max-width:280px" aria-label="Search players"></div>
       <div class="scroll"><table class="roster"><thead><tr>${th("name", "Player")}${th("joined", "Joined", "hide-sm")}<th></th></tr></thead><tbody>
-      ${list.map(p => `<tr class="player" tabindex="0" data-player="${esc(p.id)}"><td><div class="who"><span class="av">${esc(initials(p.name))}</span><div><b>${esc(p.name)}</b>${p.coach ? ' <span class="pill">Coach</span>' : ""}<div class="muted" style="font-size:13px">${p.coach ? "Coach account" : esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level].filter(Boolean).join(" · ") || "WedgeWise player")}</div></div></div></td>
+      ${list.map(p => `<tr class="player" tabindex="0" data-player="${esc(p.id)}"><td><div class="who"><span class="av">${esc(initials(p.name))}</span><div><b>${esc(p.name)}</b>${p.coach ? ' <span class="pill">Coach</span>' : ""}<div class="muted" style="font-size:13px">${p.coach ? "Coach account" : esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level].filter(Boolean).join(" · ") || "WedgeLab player")}</div></div></div></td>
         <td class="hide-sm muted">${p.joined ? dateShort(p.joined) : "–"}</td><td class="go">${ic("chevron")}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">No players match “${esc(view.q)}”.</td></tr>`}
       </tbody></table></div>
       <p class="muted" style="font-size:14px;margin:14px 0 0">Tap a player to see their proximity and wedge numbers.</p></div>`;
@@ -439,7 +439,7 @@
   /* ---------- Team: billing, code, invites ---------- */
   function teamTab() {
     const { session, t, active, players, inv } = last;
-    const invoiceHref = `mailto:${SUPPORT}?subject=${encodeURIComponent("WedgeWise Teams invoice: " + t.school)}&body=${encodeURIComponent("Team: " + t.name + "\nSchool: " + t.school + "\nTeam code: " + t.code + "\nPlayers: up to 12, plus 2 coach accounts (tell us if you need more players)\nPlease send an invoice for $499.")}`;
+    const invoiceHref = `mailto:${SUPPORT}?subject=${encodeURIComponent("WedgeLab Teams invoice: " + t.school)}&body=${encodeURIComponent("Team: " + t.name + "\nSchool: " + t.school + "\nTeam code: " + t.code + "\nPlayers: up to 12, plus 2 coach accounts (tell us if you need more players)\nPlease send an invoice for $499.")}`;
     const payHref = PAY_LINK ? PAY_LINK + "?client_reference_id=" + encodeURIComponent(t.id) + "&prefilled_email=" + encodeURIComponent(session.user.email || "") : "";
     const until = t.paid_until ? new Date(t.paid_until + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
     const payBox = active ? (until ? `<p class="muted" style="font-size:15px;margin:10px 0 0">Active through ${esc(until)}.${t.stripe_subscription ? " It renews automatically each year." : ""}</p>` : "")
@@ -456,7 +456,7 @@
           <p class="muted" style="font-size:15px;margin:12px 0 0">${players.filter(p => !p.coach).length} of ${t.seats} player spots used. Players enter this code in the app (Settings › Join a team) to join and get Pro.</p></div>
         ${t.coach_code ? `<div class="panel"><h3>Coach code</h3>
           <div class="row"><span class="code" aria-label="Coach code ${esc(t.coach_code.split("").join(" "))}">${esc(t.coach_code)}</span></div>
-          <p class="muted" style="font-size:15px;margin:12px 0 0">For you and your assistant coach: two free WedgeWise Pro accounts that don’t use player spots. Enter it in the app the same way (Settings › Join a team). ${players.filter(p => p.coach).length} of ${t.coach_seats || 2} used. Keep this code to your coaching staff.</p></div>` : ""}
+          <p class="muted" style="font-size:15px;margin:12px 0 0">For you and your assistant coach: two free WedgeLab Pro accounts that don’t use player spots. Enter it in the app the same way (Settings › Join a team). ${players.filter(p => p.coach).length} of ${t.coach_seats || 2} used. Keep this code to your coaching staff.</p></div>` : ""}
       </div>
       <div class="panel"><h3>Invite players</h3>
         <form id="add" class="row" style="flex-wrap:nowrap"><label class="field" style="flex:1;min-width:0;margin:0"><span style="position:absolute;left:-9999px">Player email</span><input id="pe" type="email" required placeholder="player@school.edu"></label><button class="btn" type="submit">Add</button></form>
@@ -482,7 +482,7 @@
     app.querySelectorAll("[data-cell]").forEach(td => { const pick = () => { view.cell = td.dataset.cell; draw(); }; td.onclick = pick; td.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } }; });
     const q = $("q"); if (q) q.oninput = () => { view.q = q.value; const pos = q.selectionStart; draw(); const n = $("q"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {} };
     if (view.tab !== "team") return;
-    const t = L.t, msg = `Join ${t.name} on WedgeWise. Download WedgeWise from the App Store, sign in, then open Settings (the gear on Home) → Join a team, and enter code ${t.code}.`;
+    const t = L.t, msg = `Join ${t.name} on WedgeLab. Download WedgeLab from the App Store, sign in, then open Settings (the gear on Home) → Join a team, and enter code ${t.code}.`;
     if (inviteNote) { const im = $("im"); im.className = "err"; im.textContent = inviteNote; inviteNote = ""; }
     $("cp").onclick = async () => { try { await navigator.clipboard.writeText(msg); $("cp").textContent = "Copied"; } catch { prompt("Copy this message:", msg); } };
     $("add").onsubmit = async e => {
