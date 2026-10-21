@@ -7,7 +7,7 @@
 (function () {
   const URL = "https://hayymoyocfbjoaifgrnf.supabase.co";
   const KEY = "sb_publishable_VitLrXAoU4154mNLQxWf1g_GxGU8ON0";
-  const SUPPORT = "wedgewisegolf@gmail.com";
+  const SUPPORT = "support@wedgelab.app";
   /* Stripe Payment Link for "WedgeLab Teams, $499 a year". Empty = card payment not switched on yet (invoice only).
      The team's id rides along as client_reference_id, so the stripe-webhook function knows which team to switch on. */
   const PAY_LINK = "https://buy.stripe.com/test_14A28s75Z7il09x2UF7ok00";
