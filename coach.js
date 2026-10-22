@@ -12,6 +12,9 @@
      The team's id rides along as client_reference_id, so the stripe-webhook function knows which team to switch on. */
   const PAY_LINK = "https://buy.stripe.com/test_14A28s75Z7il09x2UF7ok00";
   const justPaid = /[?&]paid=1/.test(location.search);
+  /* DEMO (Lou, Oct 22): coach.html?demo=1 shows a made-up team from coach-demo.js. Nothing is read from or saved to the database. */
+  const DEMO = /[?&]demo=1/.test(location.search);
+  const demoNote = "Demo team: nothing here is saved.";
   let paidChecks = 0;
   const sb = window.supabase.createClient(URL, KEY, { auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true } });
   const app = document.getElementById("app");
@@ -198,13 +201,13 @@
   async function team(session, t) {
     const active = t.status === "active";
     if (justPaid && !active && paidChecks < 30 && !pollTimer) pollTimer = setTimeout(pollPaid, 4000);
-    const [{ data: invites }, { data: roster }] = await Promise.all([
+    const [{ data: invites }, { data: roster }] = DEMO ? [{ data: window.WEDGELAB_DEMO.invites }, { data: window.WEDGELAB_DEMO.roster }] : await Promise.all([
       sb.from("team_invites").select("email,created_at,sent_at").eq("team_id", t.id).order("created_at"),
       sb.rpc("coach_roster"),
     ]);
     const inv = invites || [];
     /* Players added before the team was switched on get their emails the first time the coach opens the dashboard after. */
-    if (active && !autoSent && inv.some(x => !x.sent_at)) { autoSent = true; await sendInvites(); return render(); }
+    if (!DEMO && active && !autoSent && inv.some(x => !x.sent_at)) { autoSent = true; await sendInvites(); return render(); }
     last = { session, t, active, players: (roster || []).map(analyze), inv };
     shownAt = Date.now();
     draw();
@@ -216,12 +219,12 @@
     title(t.name, `${esc(t.school)} &nbsp;<span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span>`);
     const tabs = [["overview", "Overview"], ["players", "Players"], ["team", "Team"]];
     const body = view.tab === "team" ? teamTab() : view.tab === "players" ? (view.player ? playerView() : playersTab()) : overviewTab();
-    html(`<div class="tabs" role="tablist" aria-label="Dashboard">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${view.tab === k}">${l}${k === "players" ? ` <span class="pill">${players.length}</span>` : ""}</button>`).join("")}
+    html(`${DEMO ? `<div class="callout" style="margin-bottom:16px"><b>Demo team.</b> Made-up players, practice shots and rounds to show how the dashboard works. Nothing here is real or saved. <a href="coach.html">Leave demo</a></div>` : ""}<div class="tabs" role="tablist" aria-label="Dashboard">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${view.tab === k}">${l}${k === "players" ? ` <span class="pill">${players.length}</span>` : ""}</button>`).join("")}
       <span class="sp"></span><button type="button" id="rf" title="Refresh">${ic("refresh")} <span class="hide-sm" id="upd">Refresh</span></button></div>${body}
       <p class="muted" style="font-size:14px;margin-top:28px">Signed in as ${esc(last.session.user.email)} · <a href="#" id="out">Sign out</a></p>`);
     app.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => go(b.dataset.tab));
     $("rf").onclick = async () => { $("rf").disabled = true; $("rf").innerHTML = ic("refresh") + " Refreshing…"; await render(); };
-    $("out").onclick = e => { e.preventDefault(); sb.auth.signOut(); };
+    $("out").onclick = e => { e.preventDefault(); if (DEMO) { location.href = "coach.html"; return; } sb.auth.signOut(); };
     wire();
   }
 
@@ -488,6 +491,7 @@
     $("add").onsubmit = async e => {
       e.preventDefault();
       const email = $("pe").value.trim().toLowerCase();
+      if (DEMO) { $("am").textContent = demoNote; return; }
       if (L.inv.length >= t.seats * 2) { $("am").textContent = "That’s a lot of invites. Remove some first."; return; }
       const { error } = await sb.from("team_invites").insert({ team_id: t.id, email });
       if (error) { $("am").textContent = /duplicate/i.test(error.message) ? "That player is already on the list." : "Couldn’t add that email. Check it and try again."; return; }
@@ -495,8 +499,8 @@
       if (L.active) await sendInvites(email);
       render();
     };
-    app.querySelectorAll("[data-send]").forEach(a => a.onclick = async e => { e.preventDefault(); a.textContent = "Sending…"; await sendInvites(a.dataset.send); render(); });
-    app.querySelectorAll("[data-rm]").forEach(a => a.onclick = async e => { e.preventDefault(); await sb.from("team_invites").delete().eq("team_id", t.id).eq("email", a.dataset.rm); render(); });
+    app.querySelectorAll("[data-send]").forEach(a => a.onclick = async e => { e.preventDefault(); if (DEMO) { a.textContent = demoNote; return; } a.textContent = "Sending…"; await sendInvites(a.dataset.send); render(); });
+    app.querySelectorAll("[data-rm]").forEach(a => a.onclick = async e => { e.preventDefault(); if (DEMO) { a.textContent = demoNote; return; } await sb.from("team_invites").delete().eq("team_id", t.id).eq("email", a.dataset.rm); render(); });
   }
 
   /* Email invites through the send-invites function. A problem shows once, then the dashboard re-renders. */
@@ -512,6 +516,11 @@
   }
 
   async function render() {
+    if (DEMO) { // DEMO
+      if (!window.WEDGELAB_DEMO) await new Promise(res => { const sc = document.createElement("script"); sc.src = "coach-demo.js?v=" + Date.now().toString(36).slice(0, 5); sc.onload = res; sc.onerror = res; document.head.appendChild(sc); });
+      if (!window.WEDGELAB_DEMO) return html(`<p class="err">Couldn’t load the demo team. Refresh the page to try again.</p>`);
+      return team(window.WEDGELAB_DEMO.session, window.WEDGELAB_DEMO.team);
+    }
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { last = null; return login(); }
     const { data: teams, error } = await sb.from("teams").select("*").limit(1);
@@ -528,6 +537,6 @@
   };
   setInterval(quietRefresh, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - shownAt > 10000) quietRefresh(); });
-  sb.auth.onAuthStateChange(ev => { if (ev === "SIGNED_IN" || ev === "SIGNED_OUT") render(); });
+  if (!DEMO) sb.auth.onAuthStateChange(ev => { if (ev === "SIGNED_IN" || ev === "SIGNED_OUT") render(); });
   render();
 })();
