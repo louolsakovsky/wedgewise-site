@@ -186,7 +186,7 @@
   }
 
   /* ---- what the coach is looking at; kept across refreshes ---- */
-  const view = { tab: "overview", player: null, cell: null, club: null, swing: null, sort: "name", dir: 1, q: "", lie: "all", mode: "rounds", month: null, lsort: "closest" };
+  const view = { tab: "overview", player: null, cell: null, club: null, swing: null, sort: "name", dir: 1, q: "", lie: "all", mode: "rounds", month: null, lsort: "closest", per: "90", cmp: "tour", dlie: "all", osort: "avg", odir: 1 };
   const fromHash = () => {
     const h = location.hash.slice(1);
     if (h.startsWith("player=")) { view.tab = "players"; view.player = decodeURIComponent(h.slice(7)); }
@@ -321,88 +321,151 @@
     </tbody></table></div>
     <div class="legend"><span class="barnote">Bar: average distance from the hole after the approach. Shorter is closer.</span><span>Dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span>${tr ? `<span class="hide-sm">Vs before: last 5 rounds vs older rounds</span>` : ""}</div>`;
   }
-  /* ---------- Overview: the team inside 150 yards, from real rounds (Lou, Oct 19) ----------
-     Lou: a coach decides on who hits it closest, who is trending better or worse, and whether the team is improving.
-     Two ways to judge "trending": each player's last 5 rounds vs their earlier rounds, or one month vs the month before.
-     The wedge-number compare chart was removed; each player's number matrix stays on their Players page. */
+  /* ---------- Benchmarks (Lou, Oct 22) ----------
+     Proximity: PGA Tour and scratch-golfer averages from the fairway, by distance (PGA Tour 2021-22 season and
+     Arccos data for scratch golfers, as published by Golf Digest, Aug 2023). Rough = fairway x 1.65, an estimate
+     from PGA Tour rough vs fairway averages (75-100 yd: 29'8" vs 17'6"; 150-175 yd: 45'2" vs 27'10").
+     No published number under 50 yards or from bunkers, so those shots are left out of benchmark comparisons.
+     Strokes gained: Mark Broadie's PGA Tour tables (average strokes to hole out by distance and lie, 2003-2010)
+     and the PGA Tour putting curve. Approach SG = expected strokes before - expected strokes after - 1. */
+  const BENCH = {
+    tour: { name: "PGA Tour", short: "Tour", fw: { "50": 16.1, "75": 18.1, "100": 20.0, "125": 23.3, "150": 28.5 } },
+    scratch: { name: "Scratch golfer", short: "Scratch", fw: { "50": 19.5, "75": 22.25, "100": 26.6, "125": 34.4, "150": 42.7 } },
+  };
+  const ROUGH_X = 1.65;
+  const benchFt = (x, who) => {
+    const v = BENCH[who].fw[proxRange(x.yd)];
+    if (v == null || x.lie === "bunker") return null;
+    return x.lie === "rough" ? v * ROUGH_X : v;
+  };
+  /* Broadie, PGA Tour: average strokes to hole out (yards → strokes). */
+  const SG_YD = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300];
+  const SG_TAB = {
+    fairway: [2.18, 2.40, 2.52, 2.60, 2.66, 2.70, 2.72, 2.75, 2.77, 2.80, 2.85, 2.91, 2.98, 3.08, 3.19, 3.32, 3.45, 3.58, 3.69, 3.78],
+    rough: [2.34, 2.59, 2.70, 2.78, 2.87, 2.91, 2.93, 2.96, 2.99, 3.02, 3.08, 3.15, 3.23, 3.31, 3.42, 3.53, 3.64, 3.74, 3.83, 3.90],
+    bunker: [2.43, 2.53, 2.66, 2.82, 2.92, 3.15, 3.21, 3.24, 3.24, 3.23, 3.21, 3.22, 3.28, 3.40, 3.55, 3.70, 3.84, 3.93, 4.00, 4.04],
+  };
+  const PUTT_FT = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 60, 90];
+  const PUTT = [0, 1.0, 1.01, 1.04, 1.13, 1.23, 1.34, 1.42, 1.50, 1.56, 1.61, 1.78, 1.87, 1.98, 2.06, 2.14, 2.21, 2.40];
+  const interp = (xs, ys, v) => {
+    if (v <= xs[0]) return ys[0];
+    for (let i = 1; i < xs.length; i++) if (v <= xs[i]) return ys[i - 1] + (ys[i] - ys[i - 1]) * (v - xs[i - 1]) / (xs[i] - xs[i - 1]);
+    const n = xs.length - 1; return ys[n] + (ys[n] - ys[n - 1]) * (v - xs[n]) / (xs[n] - xs[n - 1]);
+  };
+  const holeOut = (lie, yd) => { const t = SG_TAB[lie] || SG_TAB.fairway; return yd >= 10 ? interp(SG_YD, t, yd) : t[0] - (10 - yd) * (lie === "rough" ? 0.015 : 0.01); };
+  const afterShot = x => {
+    if (x.ft <= 0) return 0;
+    if (x.finish === "green") return interp(PUTT_FT, PUTT, x.ft);
+    if (x.finish === "fringe") return interp(PUTT_FT, PUTT, x.ft) + 0.05;
+    return holeOut(x.finish === "bunker" ? "bunker" : "rough", x.ft / 3);
+  };
+  const sgShot = x => holeOut(x.lie === "rough" || x.lie === "bunker" ? x.lie : "fairway", x.yd) - afterShot(x) - 1;
+  /* Birdie chance: on the green (or holed) within 15 feet. */
+  const birdie = x => x.ft <= 15 && (x.finish === "green" || x.ft === 0);
+  /* Everything the dashboard shows for one list of approach shots. */
+  const dstat = (list, who) => {
+    const st = pstat(list);
+    const b = list.map(x => [x, benchFt(x, who)]).filter(z => z[1] != null);
+    const you = b.length ? b.reduce((a, z) => a + z[0].ft, 0) / b.length : null, ben = b.length ? b.reduce((a, z) => a + z[1], 0) / b.length : null;
+    return { ...st, birdie: list.length ? list.filter(birdie).length / list.length : 0,
+      sg: list.length ? list.reduce((a, x) => a + sgShot(x), 0) / list.length : null, you, ben, gap: b.length >= 3 ? you - ben : null, nb: b.length };
+  };
+
+  /* ---------- Dashboard: the team inside 150 yards, from real rounds (Lou, Oct 22 redesign) ----------
+     One "Showing" filter (last 30 days / last 90 days / all time) and one "Compare to" (PGA Tour / scratch).
+     Three answer cards (closest, trending, what to practice), one sortable player table, by distance, team trend. */
   const monthKey = d => String(d || "").slice(0, 7);
   const monthName = (k, long) => { const t = new Date(k + "-15T12:00:00"); return isNaN(t) ? k : t.toLocaleDateString(undefined, long ? { month: "long", year: "numeric" } : { month: "short", year: "numeric" }); };
-  const prevMonth = k => { const [y, m] = k.split("-").map(Number); const d = new Date(y, m - 2, 15); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
   const inMonth = (rounds, k) => rounds.filter(r => monthKey(r.day) === k);
+  const dayT = d => Date.parse(d + "T12:00:00") || 0;
+  const PERIODS = [["30", "Last 30 days"], ["90", "Last 90 days"], ["all", "All time"]];
+  /* The period's shots and the comparison period's shots. All time compares the last 90 days with everything before. */
+  const windowShots = (rounds, per) => {
+    const now = Date.now(), len = (per === "30" ? 30 : 90) * DAY;
+    const cur = per === "all" ? rounds : rounds.filter(r => dayT(r.day) > now - len);
+    const recent = rounds.filter(r => dayT(r.day) > now - len), before = per === "all" ? rounds.filter(r => dayT(r.day) <= now - len) : rounds.filter(r => dayT(r.day) <= now - len && dayT(r.day) > now - 2 * len);
+    const sh = rr => rr.flatMap(r => r.shots);
+    return { cur: sh(cur), recent: sh(recent), before: sh(before), rounds: cur.length };
+  };
   /* Change in feet (negative = closer), or null when either side has fewer than 3 approaches. */
   const change = (a, b) => { const x = pstat(a), y = pstat(b); return x.n >= 3 && y.n >= 3 ? Math.round(x.avg) - Math.round(y.avg) : null; };
   const chg = (d, short) => d == null ? `<span class="muted">–</span>` : d === 0 ? `<span class="muted">${short ? "Same" : "Same as before"}</span>`
     : `<span class="chg ${d < 0 ? "hi" : "lo"}">${ic(d < 0 ? "down" : "up", 13)}${Math.abs(d)} ft ${d < 0 ? "closer" : "farther"}</span>`;
+  const gapTxt = (g, who) => g == null ? `<span class="muted">–</span>` : Math.round(g) === 0 ? `<span class="muted">Even with ${BENCH[who].short}</span>`
+    : `<span class="chg ${g < 0 ? "hi" : "lo"}">${Math.abs(Math.round(g))} ft ${g < 0 ? "closer" : "farther"}</span>`;
+  const sgTxt = v => v == null ? `<span class="muted">–</span>` : `<span class="${v >= 0.005 ? "hi" : v <= -0.005 ? "lo" : "muted"}" style="font-weight:800">${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}</span>`;
+  const vsLine = per => per === "all" ? "Change compares the last 90 days with everything before." : `Change compares with the ${per} days before.`;
+
   function overviewTab() {
     const players = last.players.filter(p => !p.coach);
     const withRounds = players.filter(p => p.rounds.length);
-    const head = (extra = "") => `<div class="ovhead"><div><h3 style="margin:0 0 4px">Your team inside 150 yards</h3>
-      <p class="muted" style="margin:0;font-size:15px;max-width:640px">How close your players hit approach shots in real rounds. Players log them in the app after each round (Data entry › Proximity).</p></div>${extra}</div>`;
+    const per = view.per || "90", who = view.cmp || "tour";
     if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Share your team code from Settings. Results show here as players log rounds.</p><button class="btn" type="button" data-tab="team">Go to Settings</button></div>`;
-    if (!withRounds.length) return `<div class="panel">${head()}<div class="empty-state"><p style="margin:0">No rounds logged yet. Once players log approach shots from their rounds, you’ll see who hits it closest and who’s trending up or down.</p></div></div>`;
-    /* Months with any approach (lie filter applied), newest first. */
-    const months = [...new Set(withRounds.flatMap(p => p.rounds.filter(r => r.shots.some(lieOk)).map(r => monthKey(r.day))))].sort().reverse();
-    if (view.mode === "month" && (!view.month || !months.includes(view.month))) view.month = months[0];
-    const M = view.mode === "month" ? view.month : null, P = M ? prevMonth(M) : null;
-    /* Per player: the period's shots, and the change vs before. */
-    const rows = withRounds.map(p => {
-      const now = M ? shotsOf(inMonth(p.rounds, M)) : shotsOf(p.rounds);
-      const d = M ? change(now, shotsOf(inMonth(p.rounds, P))) : change(shotsOf(p.rounds.slice(0, 5)), shotsOf(p.rounds.slice(5)));
-      return { p, st: pstat(now), d };
-    });
+    const bar = `<div class="dbar">
+        <label><span>Showing</span><select id="per">${PERIODS.map(([k, l]) => `<option value="${k}"${k === per ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label><span>Compare to</span><select id="cmp">${Object.keys(BENCH).map(k => `<option value="${k}"${k === who ? " selected" : ""}>${BENCH[k].name}</option>`).join("")}</select></label>
+        <p class="muted">${vsLine(per)} Approach shots from real rounds, logged by players in the app.</p></div>`;
+    if (!withRounds.length) return bar + `<div class="panel empty-state"><p style="margin:0">No rounds logged yet. Once players log approach shots from their rounds, you’ll see who hits it closest, who’s trending, and what to practice.</p></div>`;
+    const rows = withRounds.map(p => { const w = windowShots(p.rounds, per); return { p, st: dstat(w.cur, who), d: change(w.recent, w.before), rounds: w.rounds }; });
     const live = rows.filter(r => r.st.n);
-    const teamNow = M ? shotsOf(withRounds.flatMap(p => inMonth(p.rounds, M))) : shotsOf(withRounds.flatMap(p => p.rounds));
-    const teamD = M ? change(teamNow, shotsOf(withRounds.flatMap(p => inMonth(p.rounds, P))))
-      : change(shotsOf(withRounds.flatMap(p => p.rounds.slice(0, 5))), shotsOf(withRounds.flatMap(p => p.rounds.slice(5))));
-    const team = pstat(teamNow);
-    const vsWhat = M ? `vs ${monthName(P, true)}` : "last 5 rounds vs earlier rounds";
-    const modeBar = `<div class="pickers" style="margin:20px 0 22px">
-        <div class="seg" role="group" aria-label="Compare"><span class="lab">Compare</span><button type="button" data-mode="rounds" aria-pressed="${!M}">Last 5 rounds vs earlier</button><button type="button" data-mode="month" aria-pressed="${!!M}">Month by month</button></div>
-        ${lieChips()}</div>
-      ${M ? `<div class="chips months" role="group" aria-label="Month" style="margin:-8px 0 22px"><span class="lab">Month</span>${months.slice(0, 12).map(k => `<button type="button" class="chip" data-month="${k}" aria-pressed="${k === M}">${esc(monthName(k))}</button>`).join("")}</div>` : ""}`;
-    /* Tiles: team average + change, greens, inside 20 ft. */
-    const t = (lbl, big, sub) => `<div class="tile"><div class="lbl">${lbl}</div><div class="big">${big}</div><div class="sub">${sub}</div></div>`;
-    const tiles = `<div class="tiles ov">
-      ${t("Team average proximity", team.avg == null ? "–" : `${Math.round(team.avg)} <small>ft</small>`, teamD == null ? (M ? `${team.n} approach${team.n === 1 ? "" : "es"} in ${esc(monthName(M, true))}` : `${team.n} approaches`) : chg(teamD) + `<span class="vs">${esc(vsWhat)}</span>`)}
-      ${t("Greens hit", team.n ? pct(team.green) : "–", team.n ? `plus ${pct(team.fringe)} on the fringe` : "&nbsp;")}
-      ${t("Inside 20 ft", team.n ? pct(team.in20 / team.n) : "–", team.n ? `${team.in20} of ${team.n} approaches` : "&nbsp;")}
-    </div>`;
-    /* Team trend: month by month (always; it's the season at a glance). */
-    const monthPts = months.slice(0, 12).reverse().map(k => { const st = pstat(shotsOf(withRounds.flatMap(p => inMonth(p.rounds, k)))); return st.n ? { label: monthName(k), y: st.avg, tip: `${monthName(k, true)}: ${Math.round(st.avg)} ft team average over ${st.n} approaches`, hl: k === M } : null; }).filter(Boolean);
-    const trendPanel = `<div class="panel"><h3 style="margin-bottom:2px">Team trend</h3><p class="muted" style="margin:0 0 12px;font-size:15px">Team average proximity, month by month${lieWord()}.</p>
-      ${monthPts.length >= 2 ? lineChart(monthPts, "Team average proximity by month", true) : `<div class="empty-state" style="padding:28px 8px">The trend line shows once there are rounds in 2 different months.</div>`}</div>`;
-    /* Leaderboard. */
-    const sort = view.lsort === "improved" ? (a, b) => (a.d == null) - (b.d == null) || (a.d - b.d) || (a.st.avg - b.st.avg) : (a, b) => a.st.avg - b.st.avg;
-    const lb = live.slice().sort(sort);
+    const tw = windowShots(withRounds.flatMap(p => p.rounds), per);
+    const team = dstat(tw.cur, who), teamD = change(tw.recent, tw.before);
+    const B = BENCH[who];
+    const av = p => `<span class="av sm">${esc(initials(p.name))}</span>`;
+    const line = (p, right) => `<div class="qr" data-player="${esc(p.id)}" tabindex="0" role="button">${av(p)}<span class="nm">${esc(p.name)}</span>${right}</div>`;
+    /* Card 1: closest (6+ approaches so one good round doesn't top the list). */
+    const closest = live.filter(r => r.st.n >= 6).sort((a, b) => a.st.avg - b.st.avg).slice(0, 3);
+    const c1 = `<div class="qcard"><div class="qk">Who’s hitting it closest?</div><h3>Average distance from the hole</h3>
+      ${closest.length ? closest.map(r => line(r.p, `<b class="qv">${Math.round(r.st.avg)} ft</b>`)).join("") : `<p class="muted">Needs 6+ approaches per player in this period.</p>`}
+      <p class="qf">Team: <b>${ft(team.avg)}</b>${teamD != null ? " · " + chg(teamD, true) : ""}${team.ben != null ? `<br>On comparable shots: team <b>${ft(team.you)}</b> · ${esc(B.short)} <b>${ft(team.ben)}</b>` : ""}</p></div>`;
+    /* Card 2: trending (most improved first, biggest slide last). */
+    const tr = live.filter(r => r.d != null && r.d !== 0).sort((a, b) => a.d - b.d);
+    const up = tr.filter(r => r.d < 0).slice(0, 2), down = tr.filter(r => r.d > 0).slice(-1);
+    const c2 = `<div class="qcard"><div class="qk">Who’s trending?</div><h3>${per === "all" ? "Last 90 days vs before" : `Vs the ${per} days before`}</h3>
+      ${up.length || down.length ? [...up, ...down].map(r => line(r.p, chg(r.d, true))).join("") : `<p class="muted">Needs 3+ approaches in both periods.</p>`}
+      <p class="qf">Most improved first, biggest slide last.</p></div>`;
+    /* Card 3: what to practice = the distance with the biggest gap to the benchmark (5+ comparable shots). */
+    const bands = PROX_RANGES.filter(r => B.fw[r.k] != null).map(r => ({ r, st: dstat(tw.cur.filter(x => proxRange(x.yd) === r.k), who) })).filter(x => x.st.nb >= 5 && x.st.gap != null);
+    const worst = bands.slice().sort((a, b) => b.st.gap - a.st.gap)[0], best = bands.slice().sort((a, b) => a.st.gap - b.st.gap)[0];
+    const c3 = `<div class="qcard"><div class="qk">What should we practice?</div><h3>Biggest gap to ${esc(B.name)}</h3>
+      ${worst ? `<div class="focus" data-tip="Compared on the same shots: fairway and rough, ${esc(B.name)} averages"><div class="fv">${worst.r.label} yd</div><div class="muted">Team ${ft(worst.st.you)} · ${esc(B.short)} ${ft(worst.st.ben)} · ${pct(worst.st.green)} greens</div></div>
+      ${best && best.r.k !== worst.r.k ? `<p class="qf">Closest to ${esc(B.short)}: <b>${best.r.label} yd</b> (${gapTxt(best.st.gap, who)})</p>` : ""}` : `<p class="muted">Needs 5+ approaches from 50 yards and out.</p>`}</div>`;
+    /* Player table, sortable by clicking a column. */
+    const cols = [["name", "Player"], ["avg", "Avg distance"], ["gap", "vs " + B.short], ["d", "Change"], ["green", "Greens hit"], ["birdie", "Birdie chances"], ["sg", "Strokes gained"], ["n", "Approaches"]];
+    const key = { name: r => r.p.name.toLowerCase(), avg: r => r.st.avg, gap: r => r.st.gap, d: r => r.d, green: r => -r.st.green, birdie: r => -r.st.birdie, sg: r => -(r.st.sg == null ? -9 : r.st.sg), n: r => -r.st.n }[view.osort || "avg"];
+    const dir = view.odir || 1;
+    const sorted = live.slice().sort((a, b) => { const x = key(a), y = key(b); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return (x < y ? -1 : x > y ? 1 : 0) * dir; });
+    const hideSm = new Set(["gap", "green", "sg", "n"]);
     const missing = players.length - live.length;
-    const board = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px"><div><h3 style="margin:0 0 2px">Players</h3>
-        <p class="muted" style="margin:0;font-size:15px">${M ? `${esc(monthName(M, true))}: average proximity and change ${esc(vsWhat)}.` : "Average proximity across all rounds, and change over the last 5 rounds vs earlier rounds."}</p></div>
-        <div class="seg sm" role="group" aria-label="Sort players"><button type="button" data-lsort="closest" aria-pressed="${view.lsort !== "improved"}">Closest</button><button type="button" data-lsort="improved" aria-pressed="${view.lsort === "improved"}">Most improved</button></div></div>
-      ${lb.length ? `<div class="scroll"><table class="pt lb"><thead><tr><th class="rk">#</th><th>Player</th><th class="r">Average</th><th class="r">Change</th><th class="r hide-sm">Greens</th><th class="r hide-sm">Approaches</th></tr></thead><tbody>
-        ${lb.map((r, i) => `<tr class="player" tabindex="0" data-player="${esc(r.p.id)}"><td class="rk">${i + 1}</td><td><div class="who"><span class="av sm">${esc(initials(r.p.name))}</span><b>${esc(r.p.name)}</b></div></td>
-          <td class="r big">${Math.round(r.st.avg)}<small> ft</small></td><td class="r">${chg(r.d, true)}</td><td class="r hide-sm">${pct(r.st.green)}</td><td class="r hide-sm"><span class="cnt"><i class="${level(r.st.n)}"></i>${r.st.n}</span></td></tr>`).join("")}
-      </tbody></table></div>` : `<div class="empty-state">No approaches${lieWord()} ${M ? "in " + esc(monthName(M, true)) : ""} yet.</div>`}
-      <div class="legend"><span>Change needs 3+ approaches on each side.</span>${missing > 0 ? `<span>${missing} player${missing === 1 ? " has" : "s have"} no approaches${lieWord()}${M ? " this month" : ""} yet.</span>` : ""}<span class="hide-sm">Approaches dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b></span><span>Tap a player for their rounds and wedge numbers.</span></div></div>`;
-    /* Where the team loses shots: by distance, with change. */
-    const dist = byDistanceTeam(withRounds, M, P);
-    return `<div class="panel">${head()}${modeBar}${tiles}</div>${trendPanel}${board}
-      <div class="panel"><h3 style="margin-bottom:2px">Where the team loses shots</h3><p class="muted" style="margin:0 0 16px;font-size:15px">The whole team by distance to the hole${M ? `, ${esc(monthName(M, true))}` : ""}. Longest bar = the range to practice.</p>${dist}</div>`;
-  }
-  function byDistanceTeam(players, M, P) {
-    const nowR = M ? players.flatMap(p => inMonth(p.rounds, M)) : players.flatMap(p => p.rounds);
-    const now = shotsOf(nowR);
-    const sideA = M ? shotsOf(players.flatMap(p => inMonth(p.rounds, M))) : shotsOf(players.flatMap(p => p.rounds.slice(0, 5)));
-    const sideB = M ? shotsOf(players.flatMap(p => inMonth(p.rounds, P))) : shotsOf(players.flatMap(p => p.rounds.slice(5)));
-    const rows = PROX_RANGES.map(r => { const f = x => proxRange(x.yd) === r.k; return { r, st: pstat(now.filter(f)), d: change(sideA.filter(f), sideB.filter(f)) }; }).filter(x => x.r.k !== "u50" || x.st.n);
-    const top = Math.ceil(Math.max(30, ...rows.map(x => x.st.avg || 0)) / 10) * 10;
-    const worst = rows.filter(x => x.st.n >= 3).sort((a, b) => b.st.avg - a.st.avg)[0];
-    return `<div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">Average proximity <span class="muted">(0–${top} ft)</span></span><span class="show-sm">Average</span></th><th class="r hide-sm">Greens</th><th class="r">Change</th></tr></thead><tbody>
-      ${rows.map(({ r, st, d }) => `<tr${worst && worst.r.k === r.k ? ' class="worst"' : ""}><td class="yd">${r.label}</td>
-        <td class="r"><span class="cnt"><i class="${level(st.n)}"></i>${st.n}</span></td>
-        <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft average over ${st.n} approach${st.n === 1 ? "" : "es"}" tabindex="0"><span style="width:${Math.max(2, (st.avg / top) * 100)}%"></span><b>${Math.round(st.avg)} ft</b></div>`}</td>
-        <td class="r hide-sm">${st.n ? pct(st.green) : "–"}</td><td class="r">${chg(d, true)}</td></tr>`).join("")}
-    </tbody></table></div>
-    <div class="legend"><span class="barnote">Bar: average distance from the hole after the approach. Shorter is closer.</span><span>Dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span></div>`;
+    const table = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px"><h3 style="margin:0">All players</h3><span class="muted" style="font-size:14px">Click a column to sort · click a player to open</span></div>
+      <div class="scroll"><table class="pt lb"><thead><tr>${cols.map(([k, l]) => `<th class="${k === "name" ? "" : "r"} ${hideSm.has(k) ? "hide-sm" : ""}"><button type="button" class="th" data-osort="${k}" ${(view.osort || "avg") === k ? "data-on" : ""}>${l}</button></th>`).join("")}</tr></thead><tbody>
+      ${sorted.map(r => `<tr class="player" tabindex="0" data-player="${esc(r.p.id)}"><td><div class="who">${av(r.p)}<b>${esc(r.p.name)}</b></div></td>
+        <td class="r big">${Math.round(r.st.avg)}<small> ft</small></td><td class="r hide-sm">${gapTxt(r.st.gap, who)}</td><td class="r">${chg(r.d, true)}</td>
+        <td class="r hide-sm">${pct(r.st.green)}</td><td class="r">${pct(r.st.birdie)}</td><td class="r hide-sm">${sgTxt(r.st.sg)}</td><td class="r hide-sm">${r.st.n}</td></tr>`).join("") || `<tr><td colspan="8" class="muted">No approaches in this period yet.</td></tr>`}
+      </tbody></table></div>
+      <div class="legend"><span><b>vs ${esc(B.short)}:</b> average distance compared with ${esc(B.name)} averages from the same distances and lies</span><span><b>Birdie chances:</b> on the green within 15 ft</span><span><b>Strokes gained:</b> per approach vs the PGA Tour</span>${missing > 0 ? `<span>${missing} player${missing === 1 ? " has" : "s have"} no approaches in this period.</span>` : ""}</div></div>`;
+    /* By distance (lie filter lives here) and team trend. */
+    const dl = view.dlie || "all";
+    const dShots = tw.cur.filter(x => dl === "all" || x.lie === dl);
+    const drows = PROX_RANGES.map(r => ({ r, st: dstat(dShots.filter(x => proxRange(x.yd) === r.k), who) })).filter(x => x.r.k !== "u50" || x.st.n);
+    const top = Math.ceil(Math.max(30, ...drows.map(x => x.st.avg || 0)) / 10) * 10;
+    const hl = dl === "bunker" ? null : drows.filter(x => x.st.gap != null && x.st.nb >= 5).sort((a, b) => b.st.gap - a.st.gap)[0];
+    const holeLie = dl === "rough" || dl === "bunker" ? dl : "fairway";
+    const dist = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px"><div><h3 style="margin:0 0 2px">By distance</h3><p class="muted" style="margin:0;font-size:15px">Team average distance from the hole, with ${esc(B.name)} averages from the same shots.</p></div>
+        <label class="dsel"><span>Lie</span><select id="dlie">${LIES.map(([k, l]) => `<option value="${k}"${k === dl ? " selected" : ""}>${l}</option>`).join("")}</select></label></div>
+      <div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">Team average <span class="muted">(0–${top} ft)</span></span><span class="show-sm">Team</span></th><th class="r">${esc(B.short)}</th><th class="r hide-sm">Greens</th><th class="r hide-sm">Tour holes out in</th></tr></thead><tbody>
+      ${drows.map(({ r, st }) => { const mid = r.k === "u50" ? 35 : r.k === "150" ? 162 : (r.lo + r.hi) / 2; return `<tr${hl && hl.r.k === r.k ? ' class="worst"' : ""}><td class="yd">${r.label}</td><td class="r">${st.n}</td>
+        <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft team average over ${st.n} approach${st.n === 1 ? "" : "es"}" tabindex="0"><span style="width:${Math.max(2, (st.avg / top) * 100)}%"></span><b>${Math.round(st.avg)} ft</b></div>`}</td>
+        <td class="r">${st.ben != null ? ft(st.ben) : `<span class="muted">–</span>`}</td>
+        <td class="r hide-sm">${st.n ? pct(st.green) : "–"}</td><td class="r hide-sm">${holeOut(holeLie, mid).toFixed(1)} strokes</td></tr>`; }).join("")}
+      </tbody></table></div>
+      <div class="legend"><span class="barnote">Bar: team average.${hl ? ` Highlighted: the biggest gap to ${esc(B.short)}.` : ""}</span><span>No published benchmark under 50 yards or from bunkers.${dl !== "fairway" ? " Rough benchmarks are estimates." : ""}</span><span class="hide-sm">Tour holes out in: average strokes a tour pro needs from the middle of that range${dl === "all" ? " (fairway)" : ""}.</span></div></div>`;
+    const months = [...new Set(withRounds.flatMap(p => p.rounds.map(r => monthKey(r.day))))].sort().reverse();
+    const monthPts = months.slice(0, 12).reverse().map(k => { const st = pstat(withRounds.flatMap(p => inMonth(p.rounds, k)).flatMap(r => r.shots)); return st.n ? { label: monthName(k), y: st.avg, tip: `${monthName(k, true)}: ${Math.round(st.avg)} ft team average over ${st.n} approaches` } : null; }).filter(Boolean);
+    const trend = `<div class="panel"><h3 style="margin-bottom:2px">Team trend</h3><p class="muted" style="margin:0 0 12px;font-size:15px">Team average distance from the hole, month by month. Lower is better.</p>
+      ${monthPts.length >= 2 ? lineChart(monthPts, "Team average proximity by month", true) : `<div class="empty-state" style="padding:28px 8px">The trend line shows once there are rounds in 2 different months.</div>`}</div>`;
+    return bar + `<div class="qcards">${c1}${c2}${c3}</div>` + table + dist + trend
+      + `<p class="muted" style="font-size:13px;margin:6px 0 0">Benchmarks: PGA Tour and scratch-golfer averages from the fairway (PGA Tour stats and Arccos data, via Golf Digest); rough estimated from tour rough vs fairway averages. Strokes gained uses Mark Broadie’s PGA Tour tables.</p>`;
   }
   /* A plain line chart: one dot per point, labeled with its value. Higher = farther from the hole.
      Drawn at the real page width so labels stay readable on phones and big screens. */
@@ -481,6 +544,9 @@
     app.querySelectorAll("[data-mode]").forEach(keep(b => { view.mode = b.dataset.mode; }));
     app.querySelectorAll("[data-month]").forEach(keep(b => { view.month = b.dataset.month; }));
     app.querySelectorAll("[data-lsort]").forEach(keep(b => { view.lsort = b.dataset.lsort; }));
+    app.querySelectorAll("[data-osort]").forEach(keep(b => { const k = b.dataset.osort; if ((view.osort || "avg") === k) view.odir = -(view.odir || 1); else { view.osort = k; view.odir = 1; } }));
+    [["per", "per"], ["cmp", "cmp"], ["dlie", "dlie"]].forEach(([id, k]) => { const el = $(id); if (el) el.onchange = () => { view[k] = el.value; const y = window.scrollY; draw(); window.scrollTo({ top: y }); }; });
+    app.querySelectorAll(".qr[data-player]").forEach(el => el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go("players", el.dataset.player); } });
     app.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => { if (view.sort === b.dataset.sort) view.dir *= -1; else { view.sort = b.dataset.sort; view.dir = 1; } draw(); });
     app.querySelectorAll("[data-cell]").forEach(td => { const pick = () => { view.cell = td.dataset.cell; draw(); }; td.onclick = pick; td.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } }; });
     const q = $("q"); if (q) q.oninput = () => { view.q = q.value; const pos = q.selectionStart; draw(); const n = $("q"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {} };

@@ -13,10 +13,10 @@
   const TYPES = ["tournament", "qualifying", "practice", "casual"];
   /* name, handicap, skill (feet from the hole at 100 yd), change per month (negative = getting closer), distance (1 = average) */
   const PLAYERS = [
-    ["Jake Miller", "+2.1", 17, -1.4, 1.06], ["Ryan Chen", "+1.4", 19, -0.4, 1.02], ["Tyler Brooks", "+0.8", 21, 1.3, 1.04],
-    ["Ethan Walsh", "0.2", 22, -2.2, 0.98], ["Nick Romano", "0.9", 23, 0.2, 1.01], ["Owen Fischer", "1.5", 25, -0.9, 0.97],
-    ["Luke Patel", "+0.5", 20, 0.9, 1.0], ["Sam Harrington", "2.3", 27, -1.8, 0.95], ["Drew Kowalski", "1.1", 24, 0.5, 1.03],
-    ["Matt Lindqvist", "0.6", 22, -1.1, 0.99],
+    ["Jake Miller", "+2.1", 22, -1.4, 1.06], ["Ryan Chen", "+1.4", 24, -0.4, 1.02], ["Tyler Brooks", "+0.8", 26, 1.3, 1.04],
+    ["Ethan Walsh", "0.2", 28, -2.2, 0.98], ["Nick Romano", "0.9", 28, 0.2, 1.01], ["Owen Fischer", "1.5", 30, -0.9, 0.97],
+    ["Luke Patel", "+0.5", 25, 0.9, 1.0], ["Sam Harrington", "2.3", 32, -1.8, 0.95], ["Drew Kowalski", "1.1", 29, 0.5, 1.03],
+    ["Matt Lindqvist", "0.6", 27, -1.1, 0.99],
   ];
   const BASE = { LW: [44, 60, 76], SW: [55, 72, 89], GW: [66, 85, 101], PW: [77, 97, 116], "9I": [87, 108, 128] };
   const LOFT = { LW: 60, SW: 56, GW: 52, PW: 46, "9I": 41 };
