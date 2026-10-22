@@ -43,11 +43,11 @@
   };
   const ic = (n, s = 18) => `<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 
-  /* ---- the same math as the app: normalize to 75°F at sea level, then the median ---- */
+  /* ---- the same math as the app: normalize to 75°F at sea level, then the average (Lou, Oct 22) ---- */
   /* Effect grows with carry: 0.8% per 10°F and 1.3% per 1,000 ft for a 100-yard shot, scaled by carry / 100. */
   const factor = (t, e, std) => { const L = Math.max(0, std) / 100; return (1 + 0.008 * L * (t - 75) / 10) * (1 + 0.013 * L * e / 1000); };
   const toStd = (carry, t, e) => { let s = carry; for (let i = 0; i < 30; i++) { const n = carry / factor(t, e, s); if (Math.abs(n - s) < 1e-9) return n; s = n; } return s; };
-  const median = a => { const b = a.slice().sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
   const FRACTION = [{ k: "half", label: "½" }, { k: "tq", label: "¾" }, { k: "full", label: "Full" }];
   const BAG = ["LW", "SW", "GW", "PW", "9I"];
   const DAY = 864e5;
@@ -63,8 +63,8 @@
       const a = cells[clubId + "|" + k]; if (!a) return null;
       const vals = a.map(x => x.norm), recent = a.filter(x => x.t >= cut).map(x => x.norm), older = a.filter(x => x.t < cut).map(x => x.norm);
       /* Trend: the number from the last four weeks vs. before that, when both have 3+ shots. */
-      const trend = recent.length >= 3 && older.length >= 3 ? median(recent) - median(older) : null;
-      return { carry: median(vals), n: a.length, trend, list: a.slice().sort((x, y) => y.t - x.t) };
+      const trend = recent.length >= 3 && older.length >= 3 ? mean(recent) - mean(older) : null;
+      return { carry: mean(vals), n: a.length, trend, list: a.slice().sort((x, y) => y.t - x.t) };
     };
     const all = [];
     clubs.forEach(c => swings.forEach(w => { const x = cell(c.id, w.k); if (x) all.push({ club: c, swing: w, ...x }); }));
