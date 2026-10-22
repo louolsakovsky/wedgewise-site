@@ -208,7 +208,7 @@
     const inv = invites || [];
     /* Players added before the team was switched on get their emails the first time the coach opens the dashboard after. */
     if (!DEMO && active && !autoSent && inv.some(x => !x.sent_at)) { autoSent = true; await sendInvites(); return render(); }
-    last = { session, t, active, players: (roster || []).map(analyze), inv };
+    last = { session, t, active, players: (roster || []).map(analyze).filter(p => !p.coach), inv }; // coach accounts are not listed (Lou, Oct 22)
     shownAt = Date.now();
     draw();
   }
@@ -217,7 +217,7 @@
     if (!last) return;
     const { t, active, players } = last;
     title(t.name, `${esc(t.school)} &nbsp;<span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span>`);
-    const tabs = [["overview", "Overview"], ["players", "Players"], ["team", "Team"]];
+    const tabs = [["overview", "Dashboard"], ["players", "Roster"], ["team", "Settings"]]; // Lou, Oct 22: Dashboard / Roster / Settings
     const body = view.tab === "team" ? teamTab() : view.tab === "players" ? (view.player ? playerView() : playersTab()) : overviewTab();
     html(`${DEMO ? `<div class="callout" style="margin-bottom:16px"><b>Demo team.</b> Made-up players, practice shots and rounds to show how the dashboard works. Nothing here is real or saved. <a href="coach.html">Leave demo</a></div>` : ""}<div class="tabs" role="tablist" aria-label="Dashboard">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${view.tab === k}">${l}${k === "players" ? ` <span class="pill">${players.length}</span>` : ""}</button>`).join("")}
       <span class="sp"></span><button type="button" id="rf" title="Refresh">${ic("refresh")} <span class="hide-sm" id="upd">Refresh</span></button></div>${body}
@@ -231,13 +231,13 @@
   /* ---------- Players: sortable roster ---------- */
   function playersTab() {
     const { players } = last;
-    if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Players appear here once they join with your team code.</p><button class="btn" type="button" data-tab="team">Go to Team</button></div>`;
+    if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Players appear here once they join with your team code.</p><button class="btn" type="button" data-tab="team">Go to Settings</button></div>`;
     const q = view.q.trim().toLowerCase();
     const key = { name: p => p.name.toLowerCase(), joined: p => -(Date.parse(p.joined) || 0) }[view.sort] || (p => p.name.toLowerCase());
     const list = players.filter(p => !q || p.name.toLowerCase().includes(q)).sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * view.dir);
     const th = (k, l, cls = "") => `<th class="${cls}"><button type="button" data-sort="${k}" ${view.sort === k ? "data-on" : ""}>${l} ${ic("sort", 14)}</button></th>`;
     return `<div class="panel">
-      <div class="row" style="justify-content:space-between;margin-bottom:14px"><h3 style="margin:0">Players</h3><input class="search" id="q" data-draft="no" type="search" placeholder="Search players" value="${esc(view.q)}" style="max-width:280px" aria-label="Search players"></div>
+      <div class="row" style="justify-content:space-between;margin-bottom:14px"><h3 style="margin:0">Roster</h3><input class="search" id="q" data-draft="no" type="search" placeholder="Search players" value="${esc(view.q)}" style="max-width:280px" aria-label="Search players"></div>
       <div class="scroll"><table class="roster"><thead><tr>${th("name", "Player")}${th("joined", "Joined", "hide-sm")}<th></th></tr></thead><tbody>
       ${list.map(p => `<tr class="player" tabindex="0" data-player="${esc(p.id)}"><td><div class="who"><span class="av">${esc(initials(p.name))}</span><div><b>${esc(p.name)}</b>${p.coach ? ' <span class="pill">Coach</span>' : ""}<div class="muted" style="font-size:13px">${p.coach ? "Coach account" : esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level].filter(Boolean).join(" · ") || "WedgeLab player")}</div></div></div></td>
         <td class="hide-sm muted">${p.joined ? dateShort(p.joined) : "–"}</td><td class="go">${ic("chevron")}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">No players match “${esc(view.q)}”.</td></tr>`}
@@ -248,8 +248,8 @@
   /* ---------- One player: numbers, trend, shots ---------- */
   function playerView() {
     const p = last.players.find(x => x.id === view.player);
-    if (!p) return `<button class="back" type="button" data-tab="players">${ic("back")} All players</button><div class="panel empty-state">This player isn’t on the team anymore.</div>`;
-    const head = `<button class="back" type="button" data-tab="players">${ic("back")} All players</button>
+    if (!p) return `<button class="back" type="button" data-tab="players">${ic("back")} Roster</button><div class="panel empty-state">This player isn’t on the team anymore.</div>`;
+    const head = `<button class="back" type="button" data-tab="players">${ic("back")} Roster</button>
       <div class="panel" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><span class="av" style="width:56px;height:56px;font-size:20px">${esc(initials(p.name))}</span>
         <div style="flex:1;min-width:180px"><h2 style="margin:0">${esc(p.name)}</h2><div class="muted">${esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level, p.joined ? "Joined " + dateShort(p.joined) : ""].filter(Boolean).join(" · "))}</div></div></div>`;
     if (!p.hasState || !p.clubs.length) return head + `<div class="panel empty-state">${p.hasState ? "This player hasn’t finished setup yet." : "Numbers show once the team is active and the player has logged shots."}</div>` + (p.rounds.length ? playerProx(p) : "");
@@ -338,7 +338,7 @@
     const withRounds = players.filter(p => p.rounds.length);
     const head = (extra = "") => `<div class="ovhead"><div><h3 style="margin:0 0 4px">Your team inside 150 yards</h3>
       <p class="muted" style="margin:0;font-size:15px;max-width:640px">How close your players hit approach shots in real rounds. Players log them in the app after each round (Data entry › Proximity).</p></div>${extra}</div>`;
-    if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Share your team code from the Team tab. Results show here as players log rounds.</p><button class="btn" type="button" data-tab="team">Go to Team</button></div>`;
+    if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Share your team code from Settings. Results show here as players log rounds.</p><button class="btn" type="button" data-tab="team">Go to Settings</button></div>`;
     if (!withRounds.length) return `<div class="panel">${head()}<div class="empty-state"><p style="margin:0">No rounds logged yet. Once players log approach shots from their rounds, you’ll see who hits it closest and who’s trending up or down.</p></div></div>`;
     /* Months with any approach (lie filter applied), newest first. */
     const months = [...new Set(withRounds.flatMap(p => p.rounds.filter(r => r.shots.some(lieOk)).map(r => monthKey(r.day))))].sort().reverse();
