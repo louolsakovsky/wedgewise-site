@@ -217,8 +217,8 @@ footer{border-top:1px solid var(--line);background:var(--paper);padding-block:56
 .panel h2{font-size:24px;margin:0 0 6px}.panel h3{margin:0 0 10px}
 .field{display:block;margin-bottom:14px}
 .field span{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px}
-.field input,.search{width:100%;min-height:50px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;padding:0 14px}
-.field input:focus,.search:focus{outline:2px solid var(--gold);border-color:transparent}
+.field input,.field select,.search{width:100%;min-height:50px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;padding:0 14px}
+.field input:focus,.field select:focus,.search:focus{outline:2px solid var(--gold);border-color:transparent}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:24px;overflow-x:auto}
 .tabs button{font:inherit;font-weight:700;font-size:16px;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:12px 14px;cursor:pointer;min-height:48px;white-space:nowrap;display:inline-flex;gap:8px;align-items:center}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
@@ -310,6 +310,7 @@ table.roster .go{color:var(--muted);text-align:right}
 .dbar select,.dsel select{font:inherit;font-weight:700;font-size:15px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:9px 34px 9px 12px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23041E42' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
 .dsel select{font-size:14px;padding:7px 30px 7px 10px}
 .dbar p{margin:0;font-size:14px;flex-basis:100%}
+.fixedcmp{display:inline-flex;align-items:center;gap:10px}.fixedcmp span{font-size:14px;font-weight:700}.fixedcmp b{font-size:15px;background:var(--panel);border-radius:10px;padding:9px 12px}
 .qcards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px}
 .qcard{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow)}
 .qcard .qk{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;color:var(--gold-ink,#9A7A2C)}

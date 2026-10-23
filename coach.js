@@ -160,6 +160,7 @@
       <form id="f">
         <label class="field"><span>Team name</span><input id="tn" required maxlength="80" placeholder="Men’s Golf"></label>
         <label class="field"><span>School</span><input id="sc" required maxlength="80" placeholder="State University"></label>
+        <label class="field"><span>Team</span><select id="tg" required><option value="">Choose…</option><option value="men">Men’s team</option><option value="women">Women’s team</option></select></label>
         <label class="field"><span>Your name</span><input id="cn" maxlength="80" autocomplete="name" placeholder="Coach Smith"></label>
         <button class="btn" type="submit">Create team</button>
       </form><p id="m" class="err"></p>
@@ -167,8 +168,10 @@
     $("out").onclick = e => { e.preventDefault(); sb.auth.signOut(); };
     $("f").onsubmit = async e => {
       e.preventDefault();
-      const row = { name: $("tn").value.trim(), school: $("sc").value.trim(), coach_name: $("cn").value.trim() || null, coach_id: session.user.id, coach_email: session.user.email };
-      const { error } = await sb.from("teams").insert(row);
+      const row = { name: $("tn").value.trim(), school: $("sc").value.trim(), coach_name: $("cn").value.trim() || null, coach_id: session.user.id, coach_email: session.user.email, gender: $("tg").value || null };
+      let { error } = await sb.from("teams").insert(row);
+      /* Before supabase/team_gender.sql has been run, the column doesn't exist yet: save without it. */
+      if (error && /gender/i.test(error.message || "")) { delete row.gender; ({ error } = await sb.from("teams").insert(row)); }
       if (error) { $("m").textContent = "Couldn’t create the team. Try again."; return; }
       clearDraft("tn", "sc", "cn");
       render();
@@ -399,11 +402,12 @@
   function overviewTab() {
     const players = last.players.filter(p => !p.coach);
     const withRounds = players.filter(p => p.rounds.length);
-    const per = view.per || "90", who = view.cmp || "tour";
+    const women = last.t.gender === "women";
+    const per = view.per || "90", who = women ? "scratch" : (view.cmp || "tour");
     if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Share your team code from Settings. Results show here as players log rounds.</p><button class="btn" type="button" data-tab="team">Go to Settings</button></div>`;
     const bar = `<div class="dbar">
         <label><span>Showing</span><select id="per">${PERIODS.map(([k, l]) => `<option value="${k}"${k === per ? " selected" : ""}>${l}</option>`).join("")}</select></label>
-        <label><span>Compare to</span><select id="cmp">${Object.keys(BENCH).map(k => `<option value="${k}"${k === who ? " selected" : ""}>${BENCH[k].name}</option>`).join("")}</select></label>
+        ${women ? `<span class="fixedcmp"><span>Compare to</span><b>Scratch golfer</b></span>` : `<label><span>Compare to</span><select id="cmp">${Object.keys(BENCH).map(k => `<option value="${k}"${k === who ? " selected" : ""}>${BENCH[k].name}</option>`).join("")}</select></label>`}
         <p class="muted">${vsLine(per)} Approach shots from real rounds, logged by players in the app.</p></div>`;
     if (!withRounds.length) return bar + `<div class="panel empty-state"><p style="margin:0">No rounds logged yet. Once players log approach shots from their rounds, you’ll see who hits it closest, who’s trending, and what to practice.</p></div>`;
     const rows = withRounds.map(p => { const w = windowShots(p.rounds, per); return { p, st: dstat(w.cur, who), d: change(w.recent, w.before), rounds: w.rounds }; });
@@ -431,7 +435,7 @@
       ${worst ? `<div class="focus" data-tip="Compared on the same shots: fairway and rough, ${esc(B.name)} averages"><div class="fv">${worst.r.label} yd</div><div class="muted">Team ${ft(worst.st.you)} · ${esc(B.short)} ${ft(worst.st.ben)} · ${pct(worst.st.green)} greens</div></div>
       ${best && best.r.k !== worst.r.k ? `<p class="qf">Closest to ${esc(B.short)}: <b>${best.r.label} yd</b> (${gapTxt(best.st.gap, who)})</p>` : ""}` : `<p class="muted">Needs 5+ approaches from 50 yards and out.</p>`}</div>`;
     /* Player table, sortable by clicking a column. */
-    const cols = [["name", "Player"], ["avg", "Avg distance"], ["gap", "vs " + B.short], ["d", "Change"], ["green", "Greens hit"], ["birdie", "Birdie chances"], ["sg", "SG: Approach (vs PGA Tour)"], ["n", "Approaches"]];
+    const cols = [["name", "Player"], ["avg", "Avg distance"], ["gap", "vs " + B.short], ["d", "Change"], ["green", "Greens hit"], ["birdie", "Birdie chances"], ["sg", "SG: Approach (vs PGA Tour)"], ["n", "Approaches"]].filter(c => !(women && c[0] === "sg"));
     const key = { name: r => r.p.name.toLowerCase(), avg: r => r.st.avg, gap: r => r.st.gap, d: r => r.d, green: r => -r.st.green, birdie: r => -r.st.birdie, sg: r => -(r.st.sg == null ? -9 : r.st.sg), n: r => -r.st.n }[view.osort || "avg"];
     const dir = view.odir || 1;
     const sorted = live.slice().sort((a, b) => { const x = key(a), y = key(b); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return (x < y ? -1 : x > y ? 1 : 0) * dir; });
@@ -441,9 +445,9 @@
       <div class="scroll"><table class="pt lb"><thead><tr>${cols.map(([k, l]) => `<th class="${k === "name" ? "" : "r"} ${hideSm.has(k) ? "hide-sm" : ""}"><button type="button" class="th" data-osort="${k}" ${(view.osort || "avg") === k ? "data-on" : ""}>${l}</button></th>`).join("")}</tr></thead><tbody>
       ${sorted.map(r => `<tr class="player" tabindex="0" data-player="${esc(r.p.id)}"><td><div class="who">${av(r.p)}<b>${esc(r.p.name)}</b></div></td>
         <td class="r big">${Math.round(r.st.avg)}<small> ft</small></td><td class="r hide-sm">${gapTxt(r.st.gap, who)}</td><td class="r">${chg(r.d, true)}</td>
-        <td class="r hide-sm">${pct(r.st.green)}</td><td class="r">${pct(r.st.birdie)}</td><td class="r hide-sm">${sgTxt(r.st.sg)}</td><td class="r hide-sm">${r.st.n}</td></tr>`).join("") || `<tr><td colspan="8" class="muted">No approaches in this period yet.</td></tr>`}
+        <td class="r hide-sm">${pct(r.st.green)}</td><td class="r">${pct(r.st.birdie)}</td>${women ? "" : `<td class="r hide-sm">${sgTxt(r.st.sg)}</td>`}<td class="r hide-sm">${r.st.n}</td></tr>`).join("") || `<tr><td colspan="8" class="muted">No approaches in this period yet.</td></tr>`}
       </tbody></table></div>
-      <div class="legend"><span><b>vs ${esc(B.short)}:</b> average distance compared with ${esc(B.name)} averages from the same distances and lies</span><span><b>Birdie chances:</b> on the green within 15 ft</span><span><b>SG: Approach (vs PGA Tour):</b> strokes gained per approach shot compared with a PGA Tour player from the same distance and lie. Above 0 = better than a tour pro.</span>${missing > 0 ? `<span>${missing} player${missing === 1 ? " has" : "s have"} no approaches in this period.</span>` : ""}</div></div>`;
+      <div class="legend"><span><b>vs ${esc(B.short)}:</b> average distance compared with ${esc(B.name)} averages from the same distances and lies</span><span><b>Birdie chances:</b> on the green within 15 ft</span>${women ? "" : `<span><b>SG: Approach (vs PGA Tour):</b> strokes gained per approach shot compared with a PGA Tour player from the same distance and lie. Above 0 = better than a tour pro.</span>`}${missing > 0 ? `<span>${missing} player${missing === 1 ? " has" : "s have"} no approaches in this period.</span>` : ""}</div></div>`;
     /* By distance (lie filter lives here) and team trend. */
     const dl = view.dlie || "all";
     const dShots = tw.cur.filter(x => dl === "all" || x.lie === dl);
@@ -453,19 +457,19 @@
     const holeLie = dl === "rough" || dl === "bunker" ? dl : "fairway";
     const dist = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px"><div><h3 style="margin:0 0 2px">By distance</h3><p class="muted" style="margin:0;font-size:15px">Team average distance from the hole, with ${esc(B.name)} averages from the same shots.</p></div>
         <label class="dsel"><span>Lie</span><select id="dlie">${LIES.map(([k, l]) => `<option value="${k}"${k === dl ? " selected" : ""}>${l}</option>`).join("")}</select></label></div>
-      <div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">Team average <span class="muted">(0–${top} ft)</span></span><span class="show-sm">Team</span></th><th class="r">${esc(B.short)}</th><th class="r hide-sm">Greens</th><th class="r hide-sm">Tour holes out in</th></tr></thead><tbody>
+      <div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">Team average <span class="muted">(0–${top} ft)</span></span><span class="show-sm">Team</span></th><th class="r">${esc(B.short)}</th><th class="r hide-sm">Greens</th>${women ? "" : `<th class="r hide-sm">Tour holes out in</th>`}</tr></thead><tbody>
       ${drows.map(({ r, st }) => { const mid = r.k === "u50" ? 35 : r.k === "150" ? 162 : (r.lo + r.hi) / 2; return `<tr${hl && hl.r.k === r.k ? ' class="worst"' : ""}><td class="yd">${r.label}</td><td class="r">${st.n}</td>
         <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft team average over ${st.n} approach${st.n === 1 ? "" : "es"}" tabindex="0"><span style="width:${Math.max(2, (st.avg / top) * 100)}%"></span><b>${Math.round(st.avg)} ft</b></div>`}</td>
         <td class="r">${st.ben != null ? ft(st.ben) : `<span class="muted">–</span>`}</td>
-        <td class="r hide-sm">${st.n ? pct(st.green) : "–"}</td><td class="r hide-sm">${holeOut(holeLie, mid).toFixed(1)} strokes</td></tr>`; }).join("")}
+        <td class="r hide-sm">${st.n ? pct(st.green) : "–"}</td>${women ? "" : `<td class="r hide-sm">${holeOut(holeLie, mid).toFixed(1)} strokes</td>`}</tr>`; }).join("")}
       </tbody></table></div>
-      <div class="legend"><span class="barnote">Bar: team average.${hl ? ` Highlighted: the biggest gap to ${esc(B.short)}.` : ""}</span><span>No published benchmark under 50 yards or from bunkers.${dl !== "fairway" ? " Rough benchmarks are estimates." : ""}</span><span class="hide-sm">Tour holes out in: average strokes a tour pro needs from the middle of that range${dl === "all" ? " (fairway)" : ""}.</span></div></div>`;
+      <div class="legend"><span class="barnote">Bar: team average.${hl ? ` Highlighted: the biggest gap to ${esc(B.short)}.` : ""}</span><span>No published benchmark under 50 yards or from bunkers.${dl !== "fairway" ? " Rough benchmarks are estimates." : ""}</span>${women ? "" : `<span class="hide-sm">Tour holes out in: average strokes a tour pro needs from the middle of that range${dl === "all" ? " (fairway)" : ""}.</span>`}</div></div>`;
     const months = [...new Set(withRounds.flatMap(p => p.rounds.map(r => monthKey(r.day))))].sort().reverse();
     const monthPts = months.slice(0, 12).reverse().map(k => { const st = pstat(withRounds.flatMap(p => inMonth(p.rounds, k)).flatMap(r => r.shots)); return st.n ? { label: monthName(k), y: st.avg, tip: `${monthName(k, true)}: ${Math.round(st.avg)} ft team average over ${st.n} approaches` } : null; }).filter(Boolean);
     const trend = `<div class="panel"><h3 style="margin-bottom:2px">Team trend</h3><p class="muted" style="margin:0 0 12px;font-size:15px">Team average distance from the hole, month by month. Lower is better.</p>
       ${monthPts.length >= 2 ? lineChart(monthPts, "Team average proximity by month", true) : `<div class="empty-state" style="padding:28px 8px">The trend line shows once there are rounds in 2 different months.</div>`}</div>`;
     return bar + `<div class="qcards">${c1}${c2}${c3}</div>` + table + dist + trend
-      + `<p class="muted" style="font-size:13px;margin:6px 0 0">Benchmarks: PGA Tour and scratch-golfer averages from the fairway (PGA Tour stats and Arccos data, via Golf Digest); rough estimated from tour rough vs fairway averages. Strokes gained uses Mark Broadie’s PGA Tour tables.</p>`;
+      + `<p class="muted" style="font-size:13px;margin:6px 0 0">${women ? "Women’s team: compared with scratch golfers (published LPGA averages by distance aren’t available yet). " : ""}Benchmarks: PGA Tour and scratch-golfer averages from the fairway (PGA Tour stats and Arccos data, via Golf Digest); rough estimated from tour rough vs fairway averages. Strokes gained uses Mark Broadie’s PGA Tour tables.</p>`;
   }
   /* A plain line chart: one dot per point, labeled with its value. Higher = farther from the hole.
      Drawn at the real page width so labels stay readable on phones and big screens. */
@@ -517,6 +521,8 @@
     return `<div class="grid2">
       <div>
         <div class="panel"><div class="row" style="justify-content:space-between"><div><h3 style="margin:0">${esc(t.name)}</h3><div class="muted">${esc(t.school)}</div></div><span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span></div>${payBox}</div>
+        <div class="panel"><h3>Team type</h3><label class="dsel" style="margin-top:4px"><span>This is a</span><select id="tg2"><option value=""${!t.gender ? " selected" : ""}>Choose…</option><option value="men"${t.gender === "men" ? " selected" : ""}>Men’s team</option><option value="women"${t.gender === "women" ? " selected" : ""}>Women’s team</option></select></label>
+          <p class="muted" id="tgm" style="font-size:14px;margin:10px 0 0">Women’s teams are compared with scratch golfers. Published LPGA averages by distance aren’t available yet.</p></div>
         <div class="panel"><h3>Team code</h3>
           <div class="row"><span class="code" aria-label="Team code ${esc(t.code.split("").join(" "))}">${esc(t.code)}</span><button class="btn ghost" id="cp" type="button">${ic("copy")} Copy invite message</button></div>
           <p class="muted" style="font-size:15px;margin:12px 0 0">${players.filter(p => !p.coach).length} of ${t.seats} player spots used. Players enter this code in the app (Settings › Join a team) to join and get Pro.</p></div>
@@ -552,6 +558,12 @@
     const q = $("q"); if (q) q.oninput = () => { view.q = q.value; const pos = q.selectionStart; draw(); const n = $("q"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {} };
     if (view.tab !== "team") return;
     const t = L.t, msg = `Join ${t.name} on WedgeLab. Download WedgeLab from the App Store, sign in, then open Settings (the gear on Home) → Join a team, and enter code ${t.code}.`;
+    const tg2 = $("tg2"); if (tg2) tg2.onchange = async () => {
+      if (DEMO) { L.t.gender = tg2.value || null; $("tgm").textContent = demoNote; return; }
+      const { error } = await sb.from("teams").update({ gender: tg2.value || null }).eq("id", t.id);
+      if (error) { $("tgm").className = "err"; $("tgm").textContent = "Couldn’t save that yet. (Run supabase/team_gender.sql once in Supabase.)"; return; }
+      t.gender = tg2.value || null; $("tgm").className = "ok"; $("tgm").textContent = "Saved.";
+    };
     if (inviteNote) { const im = $("im"); im.className = "err"; im.textContent = inviteNote; inviteNote = ""; }
     $("cp").onclick = async () => { try { await navigator.clipboard.writeText(msg); $("cp").textContent = "Copied"; } catch { prompt("Copy this message:", msg); } };
     $("add").onsubmit = async e => {
@@ -585,6 +597,7 @@
     if (DEMO) { // DEMO
       if (!window.WEDGELAB_DEMO) await new Promise(res => { const sc = document.createElement("script"); sc.src = "coach-demo.js?v=" + Date.now().toString(36).slice(0, 5); sc.onload = res; sc.onerror = res; document.head.appendChild(sc); });
       if (!window.WEDGELAB_DEMO) return html(`<p class="err">Couldn’t load the demo team. Refresh the page to try again.</p>`);
+      if (/[?&]women=1/.test(location.search)) window.WEDGELAB_DEMO.team.gender = "women";
       return team(window.WEDGELAB_DEMO.session, window.WEDGELAB_DEMO.team);
     }
     const { data: { session } } = await sb.auth.getSession();

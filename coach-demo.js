@@ -68,7 +68,7 @@
 
   window.WEDGELAB_DEMO = {
     session: { user: { email: "demo@wedgelab.app" } },
-    team: { id: "demo", name: "Demo University Golf", school: "Demo University", code: "DEMO12", coach_code: "COACH7", seats: 12, status: "active",
+    team: { id: "demo", gender: "men", name: "Demo University Golf", school: "Demo University", code: "DEMO12", coach_code: "COACH7", seats: 12, status: "active",
       paid_until: dayStr(NOW + 300 * DAY), stripe_subscription: "demo" },
     roster,
     invites: [
