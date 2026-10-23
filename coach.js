@@ -222,7 +222,7 @@
     title(t.name, `${esc(t.school)} &nbsp;<span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span>`);
     const tabs = [["overview", "Dashboard"], ["players", "Roster"], ["team", "Settings"]]; // Lou, Oct 22: Dashboard / Roster / Settings
     const body = view.tab === "team" ? teamTab() : view.tab === "players" ? (view.player ? playerView() : playersTab()) : overviewTab();
-    html(`${DEMO ? `<div class="callout" style="margin-bottom:16px"><b>Demo team.</b> Made-up players, practice shots and rounds to show how the dashboard works. Nothing here is real or saved. <a href="coach.html">Leave demo</a></div>` : ""}<div class="tabs" role="tablist" aria-label="Dashboard">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${view.tab === k}">${l}${k === "players" ? ` <span class="pill">${players.length}</span>` : ""}</button>`).join("")}
+    html(`${DEMO ? `<div class="callout" style="margin-bottom:16px"><b>Demo team.</b> Made-up players, practice shots and rounds to show how the dashboard works. Nothing here is real or saved. <a href="coach.html">Leave demo</a></div>` : ""}<div class="tabs dtabs" role="tablist" aria-label="Dashboard">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${view.tab === k}">${l}${k === "players" ? ` <span class="pill">${players.length}</span>` : ""}</button>`).join("")}
       <span class="sp"></span><button type="button" id="rf" title="Refresh">${ic("refresh")} <span class="hide-sm" id="upd">Refresh</span></button></div>${body}
       <p class="muted" style="font-size:14px;margin-top:28px">Signed in as ${esc(last.session.user.email)} · <a href="#" id="out">Sign out</a></p>`);
     app.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => go(b.dataset.tab));
@@ -307,16 +307,16 @@
     const rows = PROX_RANGES.map(r => ({ r, list: shots.filter(x => proxRange(x.yd) === r.k) })).filter(x => x.r.k !== "u50" || x.list.length);
     const stats = rows.map(x => ({ ...x, st: who ? dstat(x.list, who) : pstat(x.list) }));
     const B = who ? BENCH[who] : null;
-    const max = Math.max(30, ...stats.map(x => x.st.avg || 0));
+    const max = Math.max(30, ...stats.map(x => Math.max(x.st.avg || 0, x.st.ben || 0)));
     const top = Math.ceil(max / 10) * 10;
     const tr = rounds ? r => { const sel = rr => rr.map(o => ({ ...o, shots: o.shots.filter(x => proxRange(x.yd) === r.k) })); return proxTrend(sel(rounds)); } : null;
     return `<div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">Average proximity <span class="muted">(0–${top} ft)</span></span><span class="show-sm">Average</span></th>${B ? `<th class="r">${esc(B.short)}</th>` : ""}<th class="r">Greens</th>${tr ? `<th class="r hide-sm">Vs before</th>` : ""}</tr></thead><tbody>
       ${stats.map(({ r, st }) => { const d = tr ? tr(r) : null; return `<tr><td class="yd">${r.label}</td>
         <td class="r"><span class="cnt"><i class="${level(st.n)}"></i>${st.n}</span></td>
-        <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft average over ${st.n} approach${st.n === 1 ? "" : "es"}" tabindex="0"><span style="width:${Math.max(2, (st.avg / top) * 100)}%"></span><b>${Math.round(st.avg)} ft</b></div>`}</td>
+        <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft average over ${st.n} approach${st.n === 1 ? "" : "es"}${B && st.ben != null ? ` · ${esc(B.name)} ${Math.round(st.ben)} ft` : ""}" tabindex="0"><span style="${barW(st.avg, top)}"></span><b>${Math.round(st.avg)} ft</b>${B && st.ben != null ? benchMark(st.ben, top, B) : ""}</div>`}</td>
         ${B ? `<td class="r">${st.ben != null ? ft(st.ben) : `<span class="muted">–</span>`}</td>` : ""}<td class="r">${st.n ? pct(st.green) : "–"}</td>${tr ? `<td class="r hide-sm ${trendCls(d)}" style="font-size:14px;font-weight:700">${d == null ? `<span class="muted" style="font-weight:400">–</span>` : d === 0 ? "Same" : d < 0 ? `${-d} ft closer` : `${d} ft farther`}</td>` : ""}</tr>`; }).join("")}
     </tbody></table></div>
-    <div class="legend"><span class="barnote">Bar: average distance from the hole after the approach. Shorter is closer.</span><span>Dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span>${B ? `<span>${esc(B.short)}: ${esc(B.name)} average from the same shots. No published benchmark under 50 yards or from bunkers; rough is an estimate.</span>` : ""}${tr ? `<span class="hide-sm">Vs before: last 5 rounds vs older rounds</span>` : ""}</div>`;
+    <div class="legend"><span class="barnote">Bar: average distance from the hole after the approach. Shorter is closer.${B ? ` Gold dash: ${esc(B.name)} average.` : ""}</span><span>Dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span>${B ? `<span>${esc(B.short)}: ${esc(B.name)} average from the same shots. No published benchmark under 50 yards or from bunkers; rough is an estimate.</span>` : ""}${tr ? `<span class="hide-sm">Vs before: last 5 rounds vs older rounds</span>` : ""}</div>`;
   }
   /* ---------- Benchmarks (Lou, Oct 22) ----------
      Proximity: PGA Tour and scratch-golfer averages from the fairway, by distance (PGA Tour 2021-22 season and
@@ -357,6 +357,9 @@
     return holeOut(x.finish === "bunker" ? "bunker" : "rough", x.ft / 3);
   };
   const sgShot = x => holeOut(x.lie === "rough" || x.lie === "bunker" ? x.lie : "fairway", x.yd) - afterShot(x) - 1;
+  /* Distance bars: the bar and the gold benchmark dash use the same scale (Lou, Oct 22). */
+  const barW = (v, top) => `width:calc((100% - 64px) * ${Math.max(0.02, Math.min(1, v / top)).toFixed(4)})`;
+  const benchMark = (v, top, B) => `<i class="bm" aria-hidden="true" style="left:calc((100% - 64px) * ${Math.min(1, v / top).toFixed(4)})" title="${esc(B.name)} average: ${Math.round(v)} ft"></i>`;
   /* Birdie chance: on the green (or holed) 12 feet or closer, men's and women's teams alike (Lou, Oct 22). */
   const BIRDIE_FT = 12;
   const birdie = x => x.ft <= BIRDIE_FT && (x.finish === "green" || x.ft === 0);
@@ -450,18 +453,18 @@
     const dl = view.dlie || "all";
     const dShots = tw.cur.filter(x => dl === "all" || x.lie === dl);
     const drows = PROX_RANGES.map(r => ({ r, st: dstat(dShots.filter(x => proxRange(x.yd) === r.k), who) })).filter(x => x.r.k !== "u50" || x.st.n);
-    const top = Math.ceil(Math.max(30, ...drows.map(x => x.st.avg || 0)) / 10) * 10;
+    const top = Math.ceil(Math.max(30, ...drows.map(x => Math.max(x.st.avg || 0, x.st.ben || 0))) / 10) * 10;
     const hl = dl === "bunker" ? null : drows.filter(x => x.st.gap != null && x.st.nb >= 5).sort((a, b) => b.st.gap - a.st.gap)[0];
     const holeLie = dl === "rough" || dl === "bunker" ? dl : "fairway";
     const dist = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px"><div><h3 style="margin:0 0 2px">By distance</h3><p class="muted" style="margin:0;font-size:15px">Team average distance from the hole, with ${esc(B.name)} averages from the same shots.</p></div>
         <label class="dsel"><span>Lie</span><select id="dlie">${LIES.map(([k, l]) => `<option value="${k}"${k === dl ? " selected" : ""}>${l}</option>`).join("")}</select></label></div>
       <div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">Team average <span class="muted">(0–${top} ft)</span></span><span class="show-sm">Team</span></th><th class="r">${esc(B.short)}</th><th class="r hide-sm">Greens</th>${women ? "" : `<th class="r hide-sm">Tour holes out in</th>`}</tr></thead><tbody>
       ${drows.map(({ r, st }) => { const mid = r.k === "u50" ? 35 : r.k === "150" ? 162 : (r.lo + r.hi) / 2; return `<tr${hl && hl.r.k === r.k ? ' class="worst"' : ""}><td class="yd">${r.label}</td><td class="r">${st.n}</td>
-        <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft team average over ${st.n} approach${st.n === 1 ? "" : "es"}" tabindex="0"><span style="width:${Math.max(2, (st.avg / top) * 100)}%"></span><b>${Math.round(st.avg)} ft</b></div>`}</td>
+        <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft team average over ${st.n} approach${st.n === 1 ? "" : "es"}${st.ben != null ? ` · ${esc(B.name)} ${Math.round(st.ben)} ft` : ""}" tabindex="0"><span style="${barW(st.avg, top)}"></span><b>${Math.round(st.avg)} ft</b>${st.ben != null ? benchMark(st.ben, top, B) : ""}</div>`}</td>
         <td class="r">${st.ben != null ? ft(st.ben) : `<span class="muted">–</span>`}</td>
         <td class="r hide-sm">${st.n ? pct(st.green) : "–"}</td>${women ? "" : `<td class="r hide-sm">${holeOut(holeLie, mid).toFixed(1)} strokes</td>`}</tr>`; }).join("")}
       </tbody></table></div>
-      <div class="legend"><span class="barnote">Bar: team average.${hl ? ` Highlighted: the biggest gap to ${esc(B.short)}.` : ""}</span><span>No published benchmark under 50 yards or from bunkers.${dl !== "fairway" ? " Rough benchmarks are estimates." : ""}</span>${women ? "" : `<span class="hide-sm">Tour holes out in: average strokes a tour pro needs from the middle of that range${dl === "all" ? " (fairway)" : ""}.</span>`}</div></div>`;
+      <div class="legend"><span class="barnote">Bar: team average. Gold dash: ${esc(B.name)} average.${hl ? ` Highlighted: the biggest gap to ${esc(B.short)}.` : ""}</span><span>No published benchmark under 50 yards or from bunkers.${dl !== "fairway" ? " Rough benchmarks are estimates." : ""}</span>${women ? "" : `<span class="hide-sm">Tour holes out in: average strokes a tour pro needs from the middle of that range${dl === "all" ? " (fairway)" : ""}.</span>`}</div></div>`;
     const months = [...new Set(withRounds.flatMap(p => p.rounds.map(r => monthKey(r.day))))].sort().reverse();
     const monthPts = months.slice(0, 12).reverse().map(k => { const st = pstat(withRounds.flatMap(p => inMonth(p.rounds, k)).flatMap(r => r.shots)); return st.n ? { label: monthName(k), y: st.avg, tip: `${monthName(k, true)}: ${Math.round(st.avg)} ft team average over ${st.n} approaches` } : null; }).filter(Boolean);
     const trend = `<div class="panel"><h3 style="margin-bottom:2px">Team trend</h3><p class="muted" style="margin:0 0 12px;font-size:15px">Team average distance from the hole, month by month. Lower is better.</p>
