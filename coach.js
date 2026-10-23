@@ -8,6 +8,9 @@
   const URL = "https://hayymoyocfbjoaifgrnf.supabase.co";
   const KEY = "sb_publishable_VitLrXAoU4154mNLQxWf1g_GxGU8ON0";
   const SUPPORT = "support@wedgelab.app";
+  /* Invoices (Lou, Oct 23). Mailing address for checks; empty = the invoice asks schools to email for check instructions. */
+  const BUSINESS_ADDRESS = "";
+  const TEAM_PRICE = 499, EXTRA_PRICE = 39, BASE_PLAYERS = 12;
   /* Stripe Payment Link for "WedgeLab Teams, $499 a year". Empty = card payment not switched on yet (invoice only).
      The team's id rides along as client_reference_id, so the stripe-webhook function knows which team to switch on. */
   const PAY_LINK = "https://buy.stripe.com/test_14A28s75Z7il09x2UF7ok00";
@@ -713,7 +716,51 @@
     w.onkeydown = e => { if (e.key === "Escape") closeReport(); };
     w._title = fname; $("rpp").focus();
   }
-  function closeReport() { const w = $("rpw"); if (!w) return; document.title = w._title || document.title; w.remove(); document.body.classList.remove("rp-open"); const b = $("rpo"); if (b) b.focus(); }
+  function closeReport() { const w = $("rpw"); if (!w) return; document.title = w._title || document.title; w.remove(); document.body.classList.remove("rp-open"); const b = $("rpo") || $("ivo"); if (b) b.focus(); }
+
+  /* ---------- Team invoice (Lou, Oct 23: approved mockup). Preview on screen, Save as PDF through the print dialog,
+     same overlay as the team report. PO number and player count are typed in the bar and fill the invoice live. ---------- */
+  const money = n => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fdate = d => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  function invoiceHTML(o) {
+    const t = last.t, now = new Date(), due = new Date(now.getTime() + 30 * 864e5);
+    const extra = Math.max(0, o.players - BASE_PLAYERS), total = TEAM_PRICE + extra * EXTRA_PRICE;
+    const until = t.paid_until ? new Date(t.paid_until + "T12:00:00") : null;
+    const period = until ? `${fdate(new Date(until.getTime() - 365 * 864e5))} to ${fdate(until)}` : "One year from payment";
+    const no = `WL-${now.getFullYear()}-${t.code}`;
+    const line = (d, sub, q, p) => `<tr><td><b>${d}</b><div class="ivs">${sub}</div></td><td class="r">${q}</td><td class="r">${money(p)}</td><td class="r">${money(q * p)}</td></tr>`;
+    return `<article class="iv" aria-label="Invoice ${esc(no)}">
+      <header class="ivh"><div><div class="ivwm">Wedge<span>Lab</span></div><div class="ivfrom">WedgeWise LLC, doing business as WedgeLab${BUSINESS_ADDRESS ? "<br>" + esc(BUSINESS_ADDRESS) : ""}<br>${SUPPORT} · wedgelab.app</div></div>
+        <div class="ivmeta"><div class="ivt">INVOICE</div><div>Invoice no. <b>${esc(no)}</b><br>Issued <b>${fdate(now)}</b><br>Due <b>${fdate(due)}</b> (net 30)</div></div></header>
+      <div class="ivrule"></div>
+      <div class="ivcols"><div><div class="ivk">BILL TO</div><div><b>${esc(t.school || t.name)}</b><br>Attn: ${esc(t.coach_name || "Head coach")}, ${esc(t.name)}<br>${esc(last.session?.user?.email || "")}${o.po ? `<br>PO no. <b>${esc(o.po)}</b>` : ""}</div></div>
+        <div><div class="ivk">SUBSCRIPTION</div><div><b>WedgeLab Teams</b>, one year<br>${esc(period)}<br>Team code ${esc(t.code)}</div></div></div>
+      <table class="ivtab"><thead><tr><th>DESCRIPTION</th><th class="r">QTY</th><th class="r">PRICE</th><th class="r">AMOUNT</th></tr></thead><tbody>
+        ${line("WedgeLab Teams, annual", `Up to ${BASE_PLAYERS} players with WedgeLab Pro, 2 coach accounts, Coaching Dashboard`, 1, TEAM_PRICE)}
+        ${extra ? line("Additional player", `Each player beyond ${BASE_PLAYERS}`, extra, EXTRA_PRICE) : ""}
+      </tbody></table>
+      <div class="ivtot"><div><span>Subtotal</span><span>${money(total)}</span></div><div class="ivdue"><span>Total due</span><span>${money(total)}</span></div></div>
+      <div class="ivpay"><div><div class="ivk">PAY ONLINE</div><div>${PAY_LINK ? "By card: sign in at <b>wedgelab.app/coach.html</b>, then Settings › Pay by card." : `Email <b>${SUPPORT}</b> for a secure payment link.`}</div></div>
+        <div><div class="ivk">PAY BY CHECK</div><div>Payable to <b>WedgeWise LLC</b>. ${BUSINESS_ADDRESS ? "Mail to the address above and include the invoice number." : `Email <b>${SUPPORT}</b> for the mailing address.`}</div></div></div>
+      <footer class="ivf"><span>W-9 available on request: ${SUPPORT}</span><span>Thank you for choosing WedgeLab.</span></footer>
+    </article>`;
+  }
+  function openInvoice() {
+    closeReport();
+    const st = { po: "", players: Math.max(BASE_PLAYERS, last.players.filter(p => !p.coach).length + (last.t.status === "active" ? 0 : last.inv.length)) };
+    const w = document.createElement("div"); w.id = "rpw"; w.setAttribute("role", "dialog"); w.setAttribute("aria-modal", "true"); w.setAttribute("aria-label", "Invoice");
+    w.innerHTML = `<div class="rpbar ivbar"><button type="button" class="linkbtn" id="rpx">${ic("close")} Close</button>
+        <div class="ivins"><label>PO number <input id="ivpo" type="text" maxlength="40" placeholder="Optional" data-draft="no"></label><label>Players <input id="ivpl" type="number" min="1" max="60" value="${st.players}" inputmode="numeric" data-draft="no"></label></div>
+        <button type="button" class="btn" id="rpp">${ic("doc")} Save as PDF</button></div>
+      <div class="rpscroll"><div id="ivbox">${invoiceHTML(st)}</div><p class="rphint">Tap <b>Save as PDF</b>, then choose “Save as PDF” (computer) or Share › Save to Files (iPhone).</p></div>`;
+    document.body.appendChild(w); document.body.classList.add("rp-open");
+    const fname = document.title; document.title = `WedgeLab invoice ${last.t.code}`;
+    const re = () => { st.po = $("ivpo").value.trim(); st.players = Math.min(60, Math.max(1, parseInt($("ivpl").value, 10) || BASE_PLAYERS)); $("ivbox").innerHTML = invoiceHTML(st); };
+    $("ivpo").oninput = re; $("ivpl").oninput = re;
+    $("rpx").onclick = closeReport; $("rpp").onclick = () => window.print();
+    w.onkeydown = e => { if (e.key === "Escape") closeReport(); };
+    w._title = fname; $("rpp").focus();
+  }
 
   /* ---------- Team: billing, code, invites ---------- */
   function teamTab() {
@@ -721,12 +768,12 @@
     const invoiceHref = `mailto:${SUPPORT}?subject=${encodeURIComponent("WedgeLab Teams invoice: " + t.school)}&body=${encodeURIComponent("Team: " + t.name + "\nSchool: " + t.school + "\nTeam code: " + t.code + "\nPlayers: up to 12, plus 2 coach accounts (tell us if you need more players)\nPlease send an invoice for $499.")}`;
     const payHref = PAY_LINK ? PAY_LINK + "?client_reference_id=" + encodeURIComponent(t.id) + "&prefilled_email=" + encodeURIComponent(session.user.email || "") : "";
     const until = t.paid_until ? new Date(t.paid_until + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
-    const payBox = active ? (until ? `<p class="muted" style="font-size:15px;margin:10px 0 0">Active through ${esc(until)}.${t.stripe_subscription ? " It renews automatically each year." : ""}</p>` : "")
+    const payBox = active ? `${until ? `<p class="muted" style="font-size:15px;margin:10px 0 0">Active through ${esc(until)}.${t.stripe_subscription ? " It renews automatically each year." : ""}</p>` : ""}<p style="margin:10px 0 0;font-size:15px"><button type="button" class="linkbtn" id="ivo">${ic("doc")} Invoice for your records (PDF)</button></p>`
       : justPaid && t.status !== "ended" ? `<div class="callout" style="margin-top:16px"><b>Payment received, thank you.</b> Your team switches on in a few seconds. This page updates by itself.</div>`
       : `<div class="callout" style="margin-top:16px"><b>${t.status === "ended" ? "Your team’s year has ended." : "Switch your team on."}</b> ${t.status === "ended" ? "Renew to switch it back on for your players." : "Players can join as soon as your team is on."}
-          ${payHref ? `<div class="row" style="margin-top:14px"><a class="btn" href="${esc(payHref)}">Pay $499 by card</a><a class="btn ghost" href="${invoiceHref}">Get an invoice instead</a></div>
-          <p class="muted" style="font-size:14px;margin:10px 0 0">$499 a year for up to 12 players, plus free accounts for you and an assistant coach. Need more than 12 players? Get an invoice and tell us how many.</p>`
-          : `<p style="margin:10px 0 0"><a href="${invoiceHref}">Email us for an invoice</a> and we’ll switch the team on as soon as it’s paid.</p>`}</div>`;
+          ${payHref ? `<div class="row" style="margin-top:14px"><a class="btn" href="${esc(payHref)}">Pay $499 by card</a><button type="button" class="btn ghost" id="ivo">${ic("doc")} Get an invoice (PDF)</button></div>
+          <p class="muted" style="font-size:14px;margin:10px 0 0">$499 a year for up to 12 players, plus free accounts for you and an assistant coach. Each player beyond 12 is $39. The invoice lets you add your PO number and player count.</p>`
+          : `<div class="row" style="margin-top:14px"><button type="button" class="btn" id="ivo">${ic("doc")} Get an invoice (PDF)</button></div><p class="muted" style="font-size:14px;margin:10px 0 0">We switch the team on as soon as it’s paid. Questions? <a href="${invoiceHref}">${SUPPORT}</a></p>`}</div>`;
     return `<div class="grid2">
       <div>
         <div class="panel"><div class="row" style="justify-content:space-between"><div><h3 style="margin:0">${esc(t.name)}</h3><div class="muted">${esc(t.school)}</div></div><span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span></div>${payBox}</div>
@@ -770,6 +817,7 @@
     app.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => { if (view.sort === b.dataset.sort) view.dir *= -1; else { view.sort = b.dataset.sort; view.dir = 1; } draw(); });
     app.querySelectorAll("[data-cell]").forEach(td => { const pick = () => { view.cell = td.dataset.cell; draw(); }; td.onclick = pick; td.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } }; });
     const ro = $("rpo"); if (ro) ro.onclick = openReport;
+    const ivo = $("ivo"); if (ivo) ivo.onclick = openInvoice;
     const sh = $("sh"); if (sh) sh.onclick = () => { try { localStorage.setItem(setupKey(), "1"); } catch {} const y = window.scrollY; draw(); window.scrollTo({ top: y }); };
     const q = $("q"); if (q) q.oninput = () => { view.q = q.value; const pos = q.selectionStart; draw(); const n = $("q"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {} };
     if (view.tab !== "team") return;
