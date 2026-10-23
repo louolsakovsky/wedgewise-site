@@ -431,7 +431,7 @@
       ${worst ? `<div class="focus" data-tip="Compared on the same shots: fairway and rough, ${esc(B.name)} averages"><div class="fv">${worst.r.label} yd</div><div class="muted">Team ${ft(worst.st.you)} · ${esc(B.short)} ${ft(worst.st.ben)} · ${pct(worst.st.green)} greens</div></div>
       ${best && best.r.k !== worst.r.k ? `<p class="qf">Closest to ${esc(B.short)}: <b>${best.r.label} yd</b> (${gapTxt(best.st.gap, who)})</p>` : ""}` : `<p class="muted">Needs 5+ approaches from 50 yards and out.</p>`}</div>`;
     /* Player table, sortable by clicking a column. */
-    const cols = [["name", "Player"], ["avg", "Avg distance"], ["gap", "vs " + B.short], ["d", "Change"], ["green", "Greens hit"], ["birdie", "Birdie chances"], ["sg", "Strokes gained"], ["n", "Approaches"]];
+    const cols = [["name", "Player"], ["avg", "Avg distance"], ["gap", "vs " + B.short], ["d", "Change"], ["green", "Greens hit"], ["birdie", "Birdie chances"], ["sg", "SG: Approach (vs PGA Tour)"], ["n", "Approaches"]];
     const key = { name: r => r.p.name.toLowerCase(), avg: r => r.st.avg, gap: r => r.st.gap, d: r => r.d, green: r => -r.st.green, birdie: r => -r.st.birdie, sg: r => -(r.st.sg == null ? -9 : r.st.sg), n: r => -r.st.n }[view.osort || "avg"];
     const dir = view.odir || 1;
     const sorted = live.slice().sort((a, b) => { const x = key(a), y = key(b); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return (x < y ? -1 : x > y ? 1 : 0) * dir; });
@@ -443,7 +443,7 @@
         <td class="r big">${Math.round(r.st.avg)}<small> ft</small></td><td class="r hide-sm">${gapTxt(r.st.gap, who)}</td><td class="r">${chg(r.d, true)}</td>
         <td class="r hide-sm">${pct(r.st.green)}</td><td class="r">${pct(r.st.birdie)}</td><td class="r hide-sm">${sgTxt(r.st.sg)}</td><td class="r hide-sm">${r.st.n}</td></tr>`).join("") || `<tr><td colspan="8" class="muted">No approaches in this period yet.</td></tr>`}
       </tbody></table></div>
-      <div class="legend"><span><b>vs ${esc(B.short)}:</b> average distance compared with ${esc(B.name)} averages from the same distances and lies</span><span><b>Birdie chances:</b> on the green within 15 ft</span><span><b>Strokes gained:</b> per approach vs the PGA Tour</span>${missing > 0 ? `<span>${missing} player${missing === 1 ? " has" : "s have"} no approaches in this period.</span>` : ""}</div></div>`;
+      <div class="legend"><span><b>vs ${esc(B.short)}:</b> average distance compared with ${esc(B.name)} averages from the same distances and lies</span><span><b>Birdie chances:</b> on the green within 15 ft</span><span><b>SG: Approach (vs PGA Tour):</b> strokes gained per approach shot compared with a PGA Tour player from the same distance and lie. Above 0 = better than a tour pro.</span>${missing > 0 ? `<span>${missing} player${missing === 1 ? " has" : "s have"} no approaches in this period.</span>` : ""}</div></div>`;
     /* By distance (lie filter lives here) and team trend. */
     const dl = view.dlie || "all";
     const dShots = tw.cur.filter(x => dl === "all" || x.lie === dl);
