@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>WedgeLab Teams · For college golf coaches</title>
-<meta name="description" content="Put your whole roster on WedgeLab. Every player gets Pro, and coaches see every player's wedge numbers in one place.">
+<meta name="description" content="Put your whole roster on WedgeLab. See who hits it closest inside 150 yards, who is trending, and where your team stands against the PGA Tour.">
 <meta name="theme-color" content="#041E42">
 <link rel="icon" href="img/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<meta property="og:type" content="website"><meta property="og:site_name" content="WedgeLab"><meta property="og:title" content="WedgeLab Teams · For college golf coaches"><meta property="og:description" content="Put your whole roster on WedgeLab. Every player gets Pro, and coaches see every player's wedge numbers in one place.">
+<meta property="og:type" content="website"><meta property="og:site_name" content="WedgeLab"><meta property="og:title" content="WedgeLab Teams · For college golf coaches"><meta property="og:description" content="Put your whole roster on WedgeLab. See who hits it closest inside 150 yards, who is trending, and where your team stands against the PGA Tour.">
 <meta property="og:url" content="https://wedgelab.app/teams.html"><meta property="og:image" content="https://wedgelab.app/img/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://wedgelab.app/img/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -170,6 +170,11 @@ footer{border-top:1px solid var(--line);background:var(--paper);padding-block:56
 .price strong{font-size:64px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .card{background:#fff;color:#0B1A33;border-radius:22px;padding:22px;box-shadow:0 30px 70px rgba(0,0,0,.35)}
+.shotcard{margin:0;background:#fff;border-radius:22px;padding:10px;box-shadow:0 30px 70px rgba(0,0,0,.35)}
+.shotcard img{display:block;width:100%;height:auto;border-radius:14px}
+.shotcard figcaption{font-size:12px;color:#5B6B80;text-align:center;padding:8px 0 2px}
+.shotwide{margin:36px 0 0;background:var(--bg);border:1px solid var(--line);border-radius:22px;padding:12px;box-shadow:var(--shadow);overflow:hidden}
+.shotwide img{display:block;width:100%;height:auto;border-radius:14px}
 .card .h{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#55657C;margin-bottom:6px}
 .card .t{font-weight:800;font-size:17px;margin-bottom:14px}
 .cmp{display:grid;grid-template-columns:72px 44px 1fr;gap:10px 12px;align-items:center;font-variant-numeric:tabular-nums}
@@ -530,12 +535,12 @@ svg.tc g:focus{outline:none}svg.tc g:focus .pt,svg.tc g:hover .pt{r:7}
 <section class="hero"><div class="wrap" style="padding-bottom:80px">
   <div>
     <div class="kicker">WedgeLab for college teams</div>
-    <h1 class="display" style="font-size:clamp(46px,7vw,84px);line-height:.98">Every player’s numbers.<span style="font-size:.62em">One team.</span></h1>
-    <p class="lede" style="max-width:36ch">Put your whole roster on WedgeLab. Players build their wedge yardages from their own shots, and you see every number and how it compares across the team.</p>
+    <h1 class="display" style="font-size:clamp(46px,7vw,84px);line-height:.98">Your team inside 150.<span style="font-size:.62em">Measured against the PGA Tour.</span></h1>
+    <p class="lede" style="max-width:38ch">Players log their approach shots from real rounds. You see who hits it closest, who’s trending, and exactly where your team gives up shots to the best players in the world.</p>
     <div class="row"><a class="btn" href="coach.html?start=signup">Sign up your team</a><a class="btn ghost" href="coach.html?demo=1">See a live demo</a></div>
     <p style="font-size:15px;margin:14px 0 0;color:var(--on-navy-muted)">Click around a real Coaching Dashboard with a made-up team. Already signed up? <a style="color:#fff" href="coach.html">Coach login</a></p>
   </div>
-  <div class="card reveal" role="img" aria-label="Example team comparison for sand wedge three-quarter swings: each player's carry number on one scale."><div class="h"><span>Coaching Dashboard · example</span><span>yd, carry</span></div><div class="t">SW · ¾ swing, across the team</div><div class="cmp"><span class="nm">Player A</span><span class="v">74</span><span class="rb" title="Player A: 74 yd"><b style="left:56.2%"></b></span><span class="nm">Player B</span><span class="v">71</span><span class="rb" title="Player B: 71 yd"><b style="left:37.5%"></b></span><span class="nm">Player C</span><span class="v mid">77</span><span class="rb" title="Player C: 77 yd"><b style="left:75.0%"></b></span><span class="nm">Player D</span><span class="v">69</span><span class="rb" title="Player D: 69 yd"><b style="left:25.0%"></b></span><span class="nm">Player E</span><span class="v">73</span><span class="rb" title="Player E: 73 yd"><b style="left:50.0%"></b></span></div><div class="note">Pick any club and swing. Each dot is a player’s number.</div></div>
+  <figure class="shotcard reveal"><img src="img/team-dist.webp" width="1100" height="711" alt="Coaching Dashboard, By distance: the team's average distance from the hole at each yardage, with a gold mark for the PGA Tour average and the biggest gap highlighted."><figcaption>From the Coaching Dashboard (demo team)</figcaption></figure>
 </div></section>
 
 <section class="s alt"><div class="wrap">
@@ -551,12 +556,14 @@ svg.tc g:focus{outline:none}svg.tc g:focus .pt,svg.tc g:hover .pt{r:7}
 </div></section>
 
 <section class="s"><div class="wrap">
-  <div class="head reveal"><div class="kicker" style="color:var(--gold-ink)">Why coaches use it</div><h2>Know every number on your team</h2></div>
+  <div class="head reveal"><div class="kicker" style="color:var(--gold-ink)">Why coaches use it</div><h2>The answers a coach needs</h2></div>
   <div class="steps">
-    <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg></div><h3>Every number in one place</h3><p class="muted">Open any player to see their carry for each wedge and swing, built from their own shots. Colors show which numbers are built on enough shots to trust.</p></div>
-    <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Compare the whole team</h3><p class="muted">Pick any club and swing and see every player’s number side by side, and which numbers have moved over the last four weeks.</p></div>
-    <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></svg></div><h3>Fair across conditions</h3><p class="muted">Every shot is normalized to 75°F at sea level, so practice in October and a qualifier in April compare honestly.</p></div>
+    <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Who hits it closest</h3><p class="muted">Every player’s average distance from the hole on approach shots, who’s improving and who’s sliding. Useful when you set a lineup.</p></div>
+    <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg></div><h3>Measured against the best</h3><p class="muted">Every yardage compared with PGA Tour or scratch-golfer averages, plus strokes gained on approach. You see exactly where the team stands.</p></div>
+    <div class="step reveal"><div class="badge-i"><svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></svg></div><h3>Know what to practice</h3><p class="muted">The distance range with the biggest gap to the Tour is called out for you. Each player’s wedge numbers, built from their own practice shots, are one tap away.</p></div>
   </div>
+  <figure class="shotwide reveal"><img src="img/team-cards.webp" width="1600" height="480" alt="Coaching Dashboard: who's hitting it closest, who's trending, and what to practice."></figure>
+  <div class="row reveal" style="justify-content:center;margin-top:22px"><a class="btn" href="coach.html?demo=1">See a live demo</a></div>
 </div></section>
 
 <section class="s alt"><div class="wrap">
@@ -564,7 +571,7 @@ svg.tc g:focus{outline:none}svg.tc g:focus .pt,svg.tc g:hover .pt{r:7}
   <div class="steps">
     <div class="step reveal"><div class="n">STEP 1</div><h3>Sign up your team</h3><p class="muted">Create your coach account with your email, name your team, and pay by card, or ask for an invoice if your school pays by purchase order.</p></div>
     <div class="step reveal"><div class="n">STEP 2</div><h3>Players join with a code</h3><p class="muted">Add your players’ emails and each one gets the team code by email. They download WedgeLab, sign in, and enter the code in Settings. Pro is included for everyone.</p></div>
-    <div class="step reveal"><div class="n">STEP 3</div><h3>See every player’s numbers</h3><p class="muted">Log in to your Coaching Dashboard to compare the team on any club and swing, and open any player for their full numbers.</p></div>
+    <div class="step reveal"><div class="n">STEP 3</div><h3>Players log their rounds</h3><p class="muted">After a round, each approach takes seconds: the lie, the distance, where it finished and how far from the hole. Your dashboard updates on its own, and a one-click team report is ready to share.</p></div>
   </div>
 </div></section>
 
@@ -580,6 +587,8 @@ svg.tc g:focus{outline:none}svg.tc g:focus .pt,svg.tc g:hover .pt{r:7}
 <section class="s alt"><div class="wrap">
   <div class="head reveal"><h2>Questions coaches ask</h2></div>
   <div class="faq reveal">
+    <details><summary>We already use a stats app. Why add this?</summary><p>WedgeLab focuses on the shots inside 150 yards. Your stats app tells you where strokes are lost; WedgeLab gives every player wedge numbers they can trust, built from their own shots and adjusted for the conditions, plus a clear picture of how close they hit it compared with the PGA Tour.</p></details>
+    <details><summary>How much work is it for players?</summary><p>About two minutes after a round. They enter each approach shot from their scorecard: lie, distance, where it finished and feet from the hole. Logging practice shots for their wedge numbers is just as quick.</p></details>
     <details><summary>What do my players need?</summary><p>An iPhone with WedgeLab installed. They sign in, enter your team code in Settings, and their Pro features switch on right away.</p></details>
     <details><summary>Can we pay with a purchase order?</summary><p>Yes. Ask for an invoice and we’ll switch your team on as soon as it’s paid.</p></details>
     <details><summary>Do coaches get the app too?</summary><p>Yes. The head coach and one assistant coach each get a free WedgeLab Pro account with your coach code. Coach accounts don’t use any of your 12 player spots.</p></details>
