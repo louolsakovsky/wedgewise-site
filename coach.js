@@ -140,10 +140,10 @@
   /* ---- Team branding (Lou, Oct 22): the team's color fills the page header and its logo sits next to the name.
      Same color and logo on the team report. Default = WedgeLab navy. ---- */
   const NAVY = "#041E42";
-  const TEAM_COLORS = [["#041E42", "Navy"], ["#7A1F2B", "Maroon"], ["#9E1B32", "Crimson"], ["#BF5700", "Burnt orange"], ["#154734", "Forest green"], ["#0033A0", "Royal blue"], ["#4E2A84", "Purple"], ["#111111", "Black"]];
   const hexOk = c => /^#[0-9a-f]{6}$/i.test(c || "");
   const isLight = c => { const n = parseInt(c.slice(1), 16), ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2] > 0.35; };
-  const teamColor = t => (t && hexOk(t.color) ? t.color : NAVY);
+  /* Lou, Oct 23: no custom team color, everything stays WedgeLab navy; the team logo stays. (teams.color is left unused.) */
+  const teamColor = () => NAVY;
   function brand(t) {
     const h = document.querySelector(".pagehead"); if (!h) return;
     const c = teamColor(t);
@@ -304,7 +304,6 @@
     const steps = [
       ["Switch your team on", active, "Pay by card, or ask for an invoice if your school pays by purchase order."],
       ["Add your team logo", !!t.logo, "It shows at the top of your dashboard and on team reports."],
-      ["Pick your team color", !!t.color, "Your header and charts use it."],
       ["Choose men’s or women’s team", !!t.gender, "Sets which benchmarks your team is compared with."],
       ["Invite your players", inv.length > 0 || players.length > 0, "Add their emails. Each player gets your team code."],
       ["Players join with your team code", players.length > 0, "In the app: Settings › Join a team."],
@@ -722,13 +721,10 @@
     return `<div class="grid2">
       <div>
         <div class="panel"><div class="row" style="justify-content:space-between"><div><h3 style="margin:0">${esc(t.name)}</h3><div class="muted">${esc(t.school)}</div></div><span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span></div>${payBox}</div>
-        <div class="panel"><h3>Team branding</h3><p class="muted" style="font-size:15px;margin:0 0 14px">Your logo and team color show at the top of your dashboard and on team reports.</p>
+        <div class="panel"><h3>Team branding</h3><p class="muted" style="font-size:15px;margin:0 0 14px">Your logo shows at the top of your dashboard and on team reports.</p>
           <div class="brandrow"><div class="lgbox" style="background:${teamColor(t)}">${t.logo ? `<img src="${esc(t.logo)}" alt="Team logo">` : `<span>${ic("image", 26)}</span>`}</div>
             <div><label class="btn ghost filebtn">${ic("image")} ${t.logo ? "Change logo" : "Upload logo"}<input id="lf" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" data-draft="no"></label>
               ${t.logo ? `<button type="button" class="linkbtn" id="lr">Remove logo</button>` : ""}<div class="muted" style="font-size:13px;margin-top:6px">PNG with a see-through background looks best.</div></div></div>
-          <div class="swlab">Team color</div>
-          <div class="swatches" role="group" aria-label="Team color">${TEAM_COLORS.map(([c, n]) => `<button type="button" class="sw" data-color="${c}" style="background:${c}" aria-label="${n}" aria-pressed="${teamColor(t).toLowerCase() === c.toLowerCase()}" title="${n}"></button>`).join("")}
-            <label class="sw custom" title="Pick any color" aria-label="Pick any color"><input id="cc" type="color" value="${teamColor(t)}" data-draft="no"><span>+</span></label></div>
           <p id="bm" class="muted" style="font-size:14px;margin:10px 0 0"></p></div>
         <div class="panel"><h3>Team type</h3><label class="dsel" style="margin-top:4px"><span>This is a</span><select id="tg2"><option value=""${!t.gender ? " selected" : ""}>Choose…</option><option value="men"${t.gender === "men" ? " selected" : ""}>Men’s team</option><option value="women"${t.gender === "women" ? " selected" : ""}>Women’s team</option></select></label>
           <p class="muted" id="tgm" style="font-size:14px;margin:10px 0 0">Women’s teams are compared with scratch golfers. Published LPGA averages by distance aren’t available yet.</p></div>
@@ -791,8 +787,6 @@
       catch { const m = $("bm"); m.className = "err"; m.textContent = "That file didn’t work. Use a PNG, JPG or SVG of your logo."; }
     };
     const lr = $("lr"); if (lr) lr.onclick = () => saveBrand({ logo: null }, "Logo removed.");
-    app.querySelectorAll("[data-color]").forEach(b => b.onclick = () => saveBrand({ color: b.dataset.color }, "Color saved."));
-    const cc = $("cc"); if (cc) cc.onchange = () => saveBrand({ color: cc.value }, "Color saved.");
     if (inviteNote) { const im = $("im"); im.className = "err"; im.textContent = inviteNote; inviteNote = ""; }
     $("cp").onclick = async () => { try { await navigator.clipboard.writeText(msg); $("cp").textContent = "Copied"; } catch { prompt("Copy this message:", msg); } };
     $("add").onsubmit = async e => {
