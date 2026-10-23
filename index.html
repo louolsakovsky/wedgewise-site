@@ -133,8 +133,9 @@ h3{font-weight:800;font-size:20px;line-height:1.25;margin:0 0 6px;letter-spacing
 .factors .i{color:var(--gold)}
 .factors b{color:#fff}
 
-.teaser{display:grid;grid-template-columns:1.2fr .8fr;gap:32px;align-items:center;border:1px solid var(--line);border-radius:24px;padding:40px;background:var(--bg);box-shadow:var(--shadow)}
+.teaser{display:grid;grid-template-columns:.9fr 1.1fr;gap:32px;align-items:center;border:1px solid var(--line);border-radius:24px;padding:40px;background:var(--bg);box-shadow:var(--shadow)}
 .teaser>*{min-width:0}
+.tshot{margin:0}.tshot img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--line);box-shadow:var(--shadow);background:#fff}.tshot figcaption{font-size:13px;color:var(--muted);margin-top:10px;text-align:center}
 
 .faq{max-width:760px;margin:0 auto}
 details{border-bottom:1px solid var(--line);padding:4px 0}
@@ -286,6 +287,9 @@ table.roster .go{color:var(--muted);text-align:right}
 .mx td.cell .tr{font-size:12px;font-weight:700;color:var(--muted);display:inline-flex;align-items:center;gap:2px}
 .mx td.empty{color:var(--muted);text-align:center;cursor:default}
 .strip{position:relative;height:120px;margin:10px 0 4px}
+.dpanel{display:flex;flex-direction:column}.dpanel .strip{flex:1;min-height:210px;margin:0}
+.strip .bell{position:absolute;left:0;right:0;top:34px;bottom:24px;width:100%;height:calc(100% - 58px);overflow:visible}
+.strip .bell .bf{fill:rgba(4,30,66,.07)}.strip .bell .bl{fill:none;stroke:rgba(4,30,66,.45);stroke-width:2;vector-effect:non-scaling-stroke}
 .strip .base{position:absolute;left:0;right:0;bottom:24px;height:1px;background:var(--line)}
 .strip .med{position:absolute;top:8px;bottom:24px;width:0;border-left:2px dashed var(--gold)}
 .strip .med span{position:absolute;top:-6px;left:6px;font-size:12px;font-weight:800;color:var(--gold-ink);white-space:nowrap}
@@ -599,7 +603,7 @@ svg.tc g:focus{outline:none}svg.tc g:focus .pt,svg.tc g:hover .pt{r:7}
   <div class="teaser reveal">
     <div><div class="kicker" style="color:var(--gold-ink)">WedgeLab Teams</div><h2>Coaching a college team?</h2><p class="lead">Put your whole roster on WedgeLab. Every player gets Pro, and you see every player’s numbers in one Coaching Dashboard.</p>
       <div class="row" style="margin-top:22px"><a class="btn" href="teams.html">See WedgeLab Teams <svg class="i" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div></div>
-    <div class="card" style="box-shadow:var(--shadow);border:1px solid var(--line)"><div class="h"><span>Coaching Dashboard · example</span><span>yd, carry</span></div><div class="t">SW · ¾ swing, across the team</div><div class="cmp"><span class="nm">Player A</span><span class="v">74</span><span class="rb" title="Player A: 74 yd"><b style="left:56.2%"></b></span><span class="nm">Player B</span><span class="v">71</span><span class="rb" title="Player B: 71 yd"><b style="left:37.5%"></b></span><span class="nm">Player C</span><span class="v mid">77</span><span class="rb" title="Player C: 77 yd"><b style="left:75.0%"></b></span><span class="nm">Player D</span><span class="v">69</span><span class="rb" title="Player D: 69 yd"><b style="left:25.0%"></b></span></div><div class="note">Each dot is a player’s number, normalized to 75°F at sea level.</div></div>
+    <figure class="tshot"><img src="img/team-dist.webp" width="1100" height="711" loading="lazy" alt="Coaching Dashboard, By distance: the team's average distance from the hole at each yardage, with a gold mark for the PGA Tour average."><figcaption>Coaching Dashboard: proximity by distance (demo team)</figcaption></figure>
   </div>
 </div></section>
 

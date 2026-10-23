@@ -353,7 +353,7 @@
     const [cid, k] = (view.cell || "|").split("|");
     const c = p.clubs.find(x => x.id === cid), w = p.swings.find(x => x.k === k), x = c && w ? p.cell(cid, k) : null;
     /* Proximity (real-round results) first, then the wedge numbers (Lou, Oct 19). */
-    return head + playerProx(p) + `<h3 class="sect">Wedge numbers</h3><div class="grid2"><div class="panel"><h3 class="ih">Numbers ${info("Big number: carry in yards, normalized to 75°F at sea level. Small number: shots behind it. Color: red 0–1, yellow 2–4, green 5+ shots (same as the app).")}</h3>${mx}</div>${x ? `<div class="panel">${detail(c, w, x)}</div>` : ""}</div>`;
+    return head + playerProx(p) + `<h3 class="sect">Wedge numbers</h3><div class="grid2"><div class="panel"><h3 class="ih">Numbers ${info("Big number: carry in yards, normalized to 75°F at sea level. Small number: shots behind it. Color: red 0–1, yellow 2–4, green 5+ shots (same as the app).")}</h3>${mx}</div>${x ? `<div class="panel dpanel">${detail(c, w, x)}</div>` : ""}</div>`;
   }
   /* Summary strip at the top of a player's page (Lou, Oct 22): team rank, average, vs Tour/Scratch, change and a small
      line of the last 10 rounds, for the Dashboard's "Showing" period. */
@@ -379,23 +379,32 @@
   }
   function detail(c, w, x) {
     const vals = x.list.map(s => s.norm);
-    let lo = Math.floor(Math.min(...vals, x.carry) - 2), hi = Math.ceil(Math.max(...vals, x.carry) + 2);
+    /* Bell curve of the shots (Lou, Oct 23): normal curve from the shots' average and spread, like the app. */
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const sd = vals.length > 1 ? Math.max(1, Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / (vals.length - 1))) : 0;
+    let lo = Math.floor(Math.min(...vals, x.carry, sd ? mean - 2.6 * sd : Infinity) - 2), hi = Math.ceil(Math.max(...vals, x.carry, sd ? mean + 2.6 * sd : -Infinity) + 2);
     if (hi - lo < 8) { const m = (hi + lo) / 2; lo = Math.floor(m - 4); hi = Math.ceil(m + 4); }
     const pct = v => ((v - lo) / (hi - lo)) * 100;
     const step = hi - lo > 30 ? 10 : hi - lo > 14 ? 5 : 2, ticks = []; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
     /* Dots stack upward when shots land on the same yard. */
     const stack = {};
     const dots = x.list.map(s => { const b = Math.round(s.norm); const lvl = (stack[b] = (stack[b] || 0) + 1) - 1; return `<span class="d" tabindex="0" style="left:${pct(s.norm)}%;bottom:${30 + lvl * 15}px" data-tip="${Math.round(s.norm)} yd normalized (${Math.round(s.shot.carry)} as hit, ${Math.round(s.shot.tempF)}°F, ${Math.round(s.shot.elevFt).toLocaleString()} ft)"></span>`; }).join("");
+    let curve = "";
+    if (sd) {
+      const N = 80, pts = [];
+      for (let i = 0; i <= N; i++) { const v = lo + (hi - lo) * i / N, y = Math.exp(-0.5 * ((v - mean) / sd) ** 2); pts.push(`${(i * 100 / N).toFixed(2)},${(100 - y * 100).toFixed(2)}`); }
+      curve = `<svg class="bell" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="bf" d="M0,100 L${pts.join(" L")} L100,100 Z"/><path class="bl" d="M${pts.join(" L")}"/></svg>`;
+    }
     return `<h3>${esc(c.name)} · ${esc(w.label === "Full" ? "Full swing" : w.label + " swing")}</h3>
-      <div class="tiles" style="grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0 6px">
+      <div class="tiles" style="grid-template-columns:repeat(2,1fr);gap:14px;margin:18px 0 26px">
         <div class="tile" style="padding:14px"><div class="lbl">Number</div><div class="big" style="font-size:30px"><span class="${level(x.n)}">${Math.round(x.carry)}</span> <small>yd</small></div></div>
         <div class="tile" style="padding:14px"><div class="lbl">Shots</div><div class="big" style="font-size:30px">${x.n}</div></div>
       </div>
       <div class="strip" role="img" aria-label="${x.n} shots between ${Math.round(Math.min(...vals))} and ${Math.round(Math.max(...vals))} yards; number ${Math.round(x.carry)}.">
-        <span class="base"></span><span class="med" style="left:${pct(x.carry)}%"><span>${Math.round(x.carry)}</span></span>${dots}
+        ${curve}<span class="base"></span><span class="med" style="left:${pct(x.carry)}%"><span>${Math.round(x.carry)}</span></span>${dots}
         ${ticks.map(v => `<span class="tk" style="left:${pct(v)}%">${v}</span>`).join("")}
       </div>
-      <p class="muted" style="font-size:13px;margin:4px 0 0">Each dot is a shot, normalized to 75°F at sea level. Dashed line: the player’s number.</p>`;
+      <p class="muted" style="font-size:13px;margin:16px 0 0">Each dot is a shot, normalized to 75°F at sea level. Dashed line: the player’s number. ${sd ? "Curve: how the shots spread around it." : ""}</p>`;
   }
 
   /* ---------- Proximity: how close players hit approach shots in real rounds (Lou, Oct 19) ----------
