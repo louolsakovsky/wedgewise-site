@@ -189,7 +189,7 @@
   }
 
   /* ---- what the coach is looking at; kept across refreshes ---- */
-  const view = { tab: "overview", player: null, cell: null, club: null, swing: null, sort: "name", dir: 1, q: "", lie: "all", mode: "rounds", month: null, lsort: "closest", per: "90", cmp: "tour", dlie: "all", osort: "avg", odir: 1 };
+  const view = { tab: "overview", player: null, cell: null, club: null, swing: null, sort: "name", dir: 1, q: "", lie: "all", mode: "rounds", month: null, lsort: "closest", per: "90", cmp: "tour", dlie: "all", tdist: "all", osort: "avg", odir: 1 };
   const fromHash = () => {
     const h = location.hash.slice(1);
     if (h.startsWith("player=")) { view.tab = "players"; view.player = decodeURIComponent(h.slice(7)); }
@@ -248,7 +248,7 @@
       <p class="muted" style="font-size:14px;margin:14px 0 0">Tap a player to see their proximity and wedge numbers.</p></div>`;
   }
 
-  /* ---------- One player: numbers, trend, shots ---------- */
+  /* ---------- One player: proximity, then the number matrix and the spread of shots behind a number ---------- */
   function playerView() {
     const p = last.players.find(x => x.id === view.player);
     if (!p) return `<button class="back" type="button" data-tab="players">${ic("back")} Roster</button><div class="panel empty-state">This player isn’t on the team anymore.</div>`;
@@ -257,13 +257,12 @@
         <div style="flex:1;min-width:180px"><h2 style="margin:0">${esc(p.name)}</h2><div class="muted">${esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level, p.joined ? "Joined " + dateShort(p.joined) : ""].filter(Boolean).join(" · "))}</div></div></div>`;
     if (!p.hasState || !p.clubs.length) return head + `<div class="panel empty-state">${p.hasState ? "This player hasn’t finished setup yet." : "Numbers show once the team is active and the player has logged shots."}</div>` + (p.rounds.length ? playerProx(p) : "");
     if (!view.cell || !p.all.some(x => x.club.id + "|" + x.swing.k === view.cell)) { const top = p.all.slice().sort((a, b) => b.n - a.n)[0]; view.cell = top ? top.club.id + "|" + top.swing.k : null; }
-    const arrow = tr => (tr == null || Math.abs(tr) < 1 ? "" : `<span class="tr" title="${tr > 0 ? "Up" : "Down"} ${Math.round(Math.abs(tr))} yd over the last 4 weeks">${ic(tr > 0 ? "up" : "down", 12)}${Math.round(Math.abs(tr))}</span>`);
     const mx = `<div class="scroll"><table class="mx"><thead><tr><th>Club</th>${p.swings.map(w => `<th>${esc(w.label)}</th>`).join("")}</tr></thead><tbody>
       ${p.clubs.map(c => `<tr><td class="cl">${esc(c.name)}${c.loft != null ? `<small>${esc(c.loft)}°</small>` : ""}</td>${p.swings.map(w => { const x = p.cell(c.id, w.k), k = c.id + "|" + w.k; return x
-        ? `<td class="cell" tabindex="0" role="button" data-cell="${esc(k)}" aria-pressed="${view.cell === k}" aria-label="${esc(c.name)} ${esc(w.label)}: ${Math.round(x.carry)} yards, ${x.n} shots"><div class="n ${level(x.n)}">${Math.round(x.carry)}</div><div class="pm">${x.n} shot${x.n === 1 ? "" : "s"} ${arrow(x.trend)}</div></td>`
+        ? `<td class="cell" tabindex="0" role="button" data-cell="${esc(k)}" aria-pressed="${view.cell === k}" aria-label="${esc(c.name)} ${esc(w.label)}: ${Math.round(x.carry)} yards, ${x.n} shots"><div class="n ${level(x.n)}">${Math.round(x.carry)}</div><div class="pm">${x.n} shot${x.n === 1 ? "" : "s"}</div></td>`
         : `<td class="cell empty">–</td>`; }).join("")}</tr>`).join("")}
       </tbody></table></div>
-      <div class="legend"><span>Big number: carry in yards, normalized to 75°F at sea level</span><span>Small number: shots behind it</span><span>${ic("up", 12)} change over the last 4 weeks</span><span>Color: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> shots</span></div>`;
+      <div class="legend"><span>Big number: carry in yards, normalized to 75°F at sea level</span><span>Small number: shots behind it</span><span>Color: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> shots</span></div>`;
     const [cid, k] = (view.cell || "|").split("|");
     const c = p.clubs.find(x => x.id === cid), w = p.swings.find(x => x.k === k), x = c && w ? p.cell(cid, k) : null;
     /* Proximity (real-round results) first, then the wedge numbers (Lou, Oct 19). */
@@ -277,22 +276,17 @@
     const step = hi - lo > 30 ? 10 : hi - lo > 14 ? 5 : 2, ticks = []; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
     /* Dots stack upward when shots land on the same yard. */
     const stack = {};
-    const dots = x.list.map(s => { const b = Math.round(s.norm); const lvl = (stack[b] = (stack[b] || 0) + 1) - 1; return `<span class="d" tabindex="0" style="left:${pct(s.norm)}%;bottom:${30 + lvl * 15}px" data-tip="${dateShort(s.shot.date)}: ${Math.round(s.norm)} yd normalized (${Math.round(s.shot.carry)} as hit, ${Math.round(s.shot.tempF)}°F, ${Math.round(s.shot.elevFt).toLocaleString()} ft)"></span>`; }).join("");
-    const tr = x.trend;
+    const dots = x.list.map(s => { const b = Math.round(s.norm); const lvl = (stack[b] = (stack[b] || 0) + 1) - 1; return `<span class="d" tabindex="0" style="left:${pct(s.norm)}%;bottom:${30 + lvl * 15}px" data-tip="${Math.round(s.norm)} yd normalized (${Math.round(s.shot.carry)} as hit, ${Math.round(s.shot.tempF)}°F, ${Math.round(s.shot.elevFt).toLocaleString()} ft)"></span>`; }).join("");
     return `<h3>${esc(c.name)} · ${esc(w.label === "Full" ? "Full swing" : w.label + " swing")}</h3>
-      <div class="tiles" style="grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0 6px">
+      <div class="tiles" style="grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0 6px">
         <div class="tile" style="padding:14px"><div class="lbl">Number</div><div class="big" style="font-size:30px"><span class="${level(x.n)}">${Math.round(x.carry)}</span> <small>yd</small></div></div>
         <div class="tile" style="padding:14px"><div class="lbl">Shots</div><div class="big" style="font-size:30px">${x.n}</div></div>
-        <div class="tile" style="padding:14px"><div class="lbl">4-week trend</div><div class="big" style="font-size:30px">${tr == null ? "–" : (tr >= 0.5 ? "+" : tr <= -0.5 ? "−" : "") + Math.round(Math.abs(tr))}</div><div class="sub" style="font-size:12px">${tr == null ? "needs 3 shots before and after" : "yards vs. before"}</div></div>
       </div>
       <div class="strip" role="img" aria-label="${x.n} shots between ${Math.round(Math.min(...vals))} and ${Math.round(Math.max(...vals))} yards; number ${Math.round(x.carry)}.">
         <span class="base"></span><span class="med" style="left:${pct(x.carry)}%"><span>${Math.round(x.carry)}</span></span>${dots}
         ${ticks.map(v => `<span class="tk" style="left:${pct(v)}%">${v}</span>`).join("")}
       </div>
-      <p class="muted" style="font-size:13px;margin:4px 0 16px">Each dot is a shot, normalized to 75°F at sea level. Dashed line: the player’s number.</p>
-      <div class="scroll"><table class="shots"><thead><tr><th>Date</th><th>Conditions</th><th class="r">As hit</th><th class="r">Normalized</th></tr></thead><tbody>
-        ${x.list.slice(0, 10).map(s => `<tr><td>${dateShort(s.shot.date)}</td><td class="muted">${Math.round(s.shot.tempF)}°F, ${Math.round(s.shot.elevFt).toLocaleString()} ft</td><td class="r">${Math.round(s.shot.carry)}</td><td class="r"><b>${Math.round(s.norm)}</b></td></tr>`).join("")}
-      </tbody></table></div>${x.n > 10 ? `<p class="muted" style="font-size:13px;margin:8px 0 0">Latest 10 of ${x.n} shots.</p>` : ""}`;
+      <p class="muted" style="font-size:13px;margin:4px 0 0">Each dot is a shot, normalized to 75°F at sea level. Dashed line: the player’s number.</p>`;
   }
 
   /* ---------- Proximity: how close players hit approach shots in real rounds (Lou, Oct 19) ----------
@@ -305,24 +299,24 @@
     return `<div class="tiles ${four ? "t4" : ""}">
       ${t("Average proximity", st.avg == null ? "–" : `${Math.round(st.avg)} <small>ft</small>`, trend != null ? `<span class="${trendCls(trend)}">${trendText(trend)}</span>` : `${st.n} approach${st.n === 1 ? "" : "es"}`)}
       ${t("Greens hit", st.n ? pct(st.green) : "–", st.n ? `plus ${pct(st.fringe)} on the fringe` : "&nbsp;")}
-      ${four ? t("Inside 10 ft", st.n ? pct(st.in10 / st.n) : "–", st.n ? `${st.in10} of ${st.n}` : "&nbsp;") : ""}
-      ${t("Inside 20 ft", st.n ? pct(st.in20 / st.n) : "–", st.n ? `${st.in20} of ${st.n}` : "&nbsp;")}
+      ${(() => { const b = st.list ? st.list.filter(birdie).length : 0; return t("Birdie chances", st.n ? pct(b / st.n) : "–", st.n ? `${b} of ${st.n} on the green 12 ft & in` : "&nbsp;"); })()}
     </div>`;
   }
   /* By distance: approaches, average proximity as a bar, greens hit. */
-  function byDistance(shots, rounds) {
+  function byDistance(shots, rounds, who) {
     const rows = PROX_RANGES.map(r => ({ r, list: shots.filter(x => proxRange(x.yd) === r.k) })).filter(x => x.r.k !== "u50" || x.list.length);
-    const stats = rows.map(x => ({ ...x, st: pstat(x.list) }));
+    const stats = rows.map(x => ({ ...x, st: who ? dstat(x.list, who) : pstat(x.list) }));
+    const B = who ? BENCH[who] : null;
     const max = Math.max(30, ...stats.map(x => x.st.avg || 0));
     const top = Math.ceil(max / 10) * 10;
     const tr = rounds ? r => { const sel = rr => rr.map(o => ({ ...o, shots: o.shots.filter(x => proxRange(x.yd) === r.k) })); return proxTrend(sel(rounds)); } : null;
-    return `<div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">Average proximity <span class="muted">(0–${top} ft)</span></span><span class="show-sm">Average</span></th><th class="r">Greens</th>${tr ? `<th class="r hide-sm">Vs before</th>` : ""}</tr></thead><tbody>
+    return `<div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">Average proximity <span class="muted">(0–${top} ft)</span></span><span class="show-sm">Average</span></th>${B ? `<th class="r">${esc(B.short)}</th>` : ""}<th class="r">Greens</th>${tr ? `<th class="r hide-sm">Vs before</th>` : ""}</tr></thead><tbody>
       ${stats.map(({ r, st }) => { const d = tr ? tr(r) : null; return `<tr><td class="yd">${r.label}</td>
         <td class="r"><span class="cnt"><i class="${level(st.n)}"></i>${st.n}</span></td>
         <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft average over ${st.n} approach${st.n === 1 ? "" : "es"}" tabindex="0"><span style="width:${Math.max(2, (st.avg / top) * 100)}%"></span><b>${Math.round(st.avg)} ft</b></div>`}</td>
-        <td class="r">${st.n ? pct(st.green) : "–"}</td>${tr ? `<td class="r hide-sm ${trendCls(d)}" style="font-size:14px;font-weight:700">${d == null ? `<span class="muted" style="font-weight:400">–</span>` : d === 0 ? "Same" : d < 0 ? `${-d} ft closer` : `${d} ft farther`}</td>` : ""}</tr>`; }).join("")}
+        ${B ? `<td class="r">${st.ben != null ? ft(st.ben) : `<span class="muted">–</span>`}</td>` : ""}<td class="r">${st.n ? pct(st.green) : "–"}</td>${tr ? `<td class="r hide-sm ${trendCls(d)}" style="font-size:14px;font-weight:700">${d == null ? `<span class="muted" style="font-weight:400">–</span>` : d === 0 ? "Same" : d < 0 ? `${-d} ft closer` : `${d} ft farther`}</td>` : ""}</tr>`; }).join("")}
     </tbody></table></div>
-    <div class="legend"><span class="barnote">Bar: average distance from the hole after the approach. Shorter is closer.</span><span>Dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span>${tr ? `<span class="hide-sm">Vs before: last 5 rounds vs older rounds</span>` : ""}</div>`;
+    <div class="legend"><span class="barnote">Bar: average distance from the hole after the approach. Shorter is closer.</span><span>Dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span>${B ? `<span>${esc(B.short)}: ${esc(B.name)} average from the same shots. No published benchmark under 50 yards or from bunkers; rough is an estimate.</span>` : ""}${tr ? `<span class="hide-sm">Vs before: last 5 rounds vs older rounds</span>` : ""}</div>`;
   }
   /* ---------- Benchmarks (Lou, Oct 22) ----------
      Proximity: PGA Tour and scratch-golfer averages from the fairway, by distance (PGA Tour 2021-22 season and
@@ -411,7 +405,9 @@
         ${women ? `<span class="fixedcmp"><span>Compare to</span><b>Scratch golfer</b></span>` : `<label><span>Compare to</span><select id="cmp">${Object.keys(BENCH).map(k => `<option value="${k}"${k === who ? " selected" : ""}>${BENCH[k].name}</option>`).join("")}</select></label>`}
         <p class="muted">${vsLine(per)} Approach shots from real rounds, logged by players in the app.</p></div>`;
     if (!withRounds.length) return bar + `<div class="panel empty-state"><p style="margin:0">No rounds logged yet. Once players log approach shots from their rounds, you’ll see who hits it closest, who’s trending, and what to practice.</p></div>`;
-    const rows = withRounds.map(p => { const w = windowShots(p.rounds, per); return { p, st: dstat(w.cur, who), d: change(w.recent, w.before), rounds: w.rounds }; });
+    /* The All players table can be narrowed to one distance range (Lou, Oct 22). */
+    const td = view.tdist || "all", inTd = x => td === "all" || proxRange(x.yd) === td, tdLabel = (PROX_RANGES.find(r => r.k === td) || {}).label;
+    const rows = withRounds.map(p => { const w = windowShots(p.rounds, per); return { p, st: dstat(w.cur.filter(inTd), who), d: change(w.recent.filter(inTd), w.before.filter(inTd)), rounds: w.rounds }; });
     const live = rows.filter(r => r.st.n);
     const tw = windowShots(withRounds.flatMap(p => p.rounds), per);
     const team = dstat(tw.cur, who), teamD = change(tw.recent, tw.before);
@@ -442,13 +438,14 @@
     const sorted = live.slice().sort((a, b) => { const x = key(a), y = key(b); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return (x < y ? -1 : x > y ? 1 : 0) * dir; });
     const hideSm = new Set(["gap", "green", "sg", "n"]);
     const missing = players.length - live.length;
-    const table = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px"><h3 style="margin:0">All players</h3><span class="muted" style="font-size:14px">Click a column to sort · click a player to open</span></div>
+    const table = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px"><div><h3 style="margin:0 0 2px">All players</h3><span class="muted" style="font-size:14px">Click a column to sort · click a player to open</span></div>
+      <label class="dsel"><span>Distance</span><select id="tdist"><option value="all"${td === "all" ? " selected" : ""}>All distances</option>${PROX_RANGES.map(r => `<option value="${r.k}"${r.k === td ? " selected" : ""}>${r.label} yd</option>`).join("")}</select></label></div>
       <div class="scroll"><table class="pt lb"><thead><tr>${cols.map(([k, l]) => `<th class="${k === "name" ? "" : "r"} ${hideSm.has(k) ? "hide-sm" : ""}"><button type="button" class="th" data-osort="${k}" ${(view.osort || "avg") === k ? "data-on" : ""}>${l}</button></th>`).join("")}</tr></thead><tbody>
       ${sorted.map(r => `<tr class="player" tabindex="0" data-player="${esc(r.p.id)}"><td><div class="who">${av(r.p)}<b>${esc(r.p.name)}</b></div></td>
         <td class="r big">${Math.round(r.st.avg)}<small> ft</small></td><td class="r hide-sm">${gapTxt(r.st.gap, who)}</td><td class="r">${chg(r.d, true)}</td>
-        <td class="r hide-sm">${pct(r.st.green)}</td><td class="r">${pct(r.st.birdie)}</td>${women ? "" : `<td class="r hide-sm">${sgTxt(r.st.sg)}</td>`}<td class="r hide-sm">${r.st.n}</td></tr>`).join("") || `<tr><td colspan="8" class="muted">No approaches in this period yet.</td></tr>`}
+        <td class="r hide-sm">${pct(r.st.green)}</td><td class="r">${pct(r.st.birdie)}</td>${women ? "" : `<td class="r hide-sm">${sgTxt(r.st.sg)}</td>`}<td class="r hide-sm">${r.st.n}</td></tr>`).join("") || `<tr><td colspan="8" class="muted">No approaches ${td === "all" ? "" : `from ${tdLabel} yards `}in this period yet.</td></tr>`}
       </tbody></table></div>
-      <div class="legend"><span><b>vs ${esc(B.short)}:</b> average distance compared with ${esc(B.name)} averages from the same distances and lies</span><span><b>Birdie chances (12 ft & in):</b> share of approaches that finished on the green 12 feet or closer to the hole</span>${women ? "" : `<span><b>SG: Approach (vs PGA Tour):</b> strokes gained per approach shot compared with a PGA Tour player from the same distance and lie. Above 0 = better than a tour pro.</span>`}${missing > 0 ? `<span>${missing} player${missing === 1 ? " has" : "s have"} no approaches in this period.</span>` : ""}</div></div>`;
+      <div class="legend"><span><b>vs ${esc(B.short)}:</b> average distance compared with ${esc(B.name)} averages from the same distances and lies</span><span><b>Birdie chances (12 ft & in):</b> share of approaches that finished on the green 12 feet or closer to the hole</span>${women ? "" : `<span><b>SG: Approach (vs PGA Tour):</b> strokes gained per approach shot compared with a PGA Tour player from the same distance and lie. Above 0 = better than a tour pro.</span>`}${missing > 0 ? `<span>${missing} player${missing === 1 ? " has" : "s have"} no approaches ${td === "all" ? "" : `from ${tdLabel} yards `}in this period.</span>` : ""}</div></div>`;
     /* By distance (lie filter lives here) and team trend. */
     const dl = view.dlie || "all";
     const dShots = tw.cur.filter(x => dl === "all" || x.lie === dl);
@@ -498,9 +495,12 @@
     const head = `<h3 style="margin:0 0 4px">Proximity</h3><p class="muted" style="margin:0;font-size:15px">Approach shots from real rounds: how far from the hole they finished.</p>`;
     if (!p.rounds.length) return `<div class="panel">${head}<div class="empty-state" style="padding:24px 8px 8px"><p style="margin:0">${esc(p.name)} hasn’t logged a round yet.</p></div></div>`;
     const shots = shotsOf(p.rounds), st = pstat(shots), tr = proxTrend(p.rounds);
-    return `<div class="panel">${head}<div class="pickers" style="margin:18px 0 20px">${lieChips()}</div>${proxTiles(st, true, tr)}</div>
+    const women = last.t.gender === "women", who = women ? "scratch" : (view.cmp || "tour");
+    return `<div class="panel">${head}<div class="pickers" style="margin:18px 0 20px">${lieChips()}</div>${proxTiles({ ...st, list: shots }, false, tr)}</div>
       <div class="panel"><h3 style="margin-bottom:2px">Round by round</h3><p class="muted" style="margin:0 0 12px;font-size:15px">Average proximity in each of the last ${Math.min(10, p.rounds.length)} rounds${lieWord()}.</p>${proxTrendChart(p.rounds)}</div>
-      <div class="panel"><h3>By distance</h3>${byDistance(shots, p.rounds)}</div>
+      <div class="panel"><div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px"><h3 style="margin:0">By distance</h3>
+        ${women ? `<span class="fixedcmp"><span>Compare to</span><b>Scratch golfer</b></span>` : `<label class="dsel"><span>Compare to</span><select id="pcmp">${Object.keys(BENCH).map(k => `<option value="${k}"${k === who ? " selected" : ""}>${BENCH[k].name}</option>`).join("")}</select></label>`}</div>
+        ${byDistance(shots, p.rounds, who)}</div>
       <div class="panel"><h3>Rounds</h3><div class="scroll"><table class="shots"><thead><tr><th>Date</th><th>Course</th><th class="hide-sm">Round</th><th class="r hide-sm">Approaches</th><th class="r">Average</th><th class="r">Greens</th><th class="r hide-sm">Closest</th></tr></thead><tbody>
         ${p.rounds.filter(r => r.shots.some(lieOk)).slice(0, 15).map(r => { const s2 = pstat(r.shots.filter(lieOk)); return `<tr><td style="white-space:nowrap">${esc(dayShort(r.day))}</td><td>${esc(r.course && r.course.name || "–")}</td><td class="hide-sm muted">${esc(ROUND_TYPES[r.type] || "")}</td>
           <td class="r hide-sm">${s2.n}</td><td class="r" style="white-space:nowrap"><b>${ft(s2.avg)}</b></td><td class="r">${s2.n ? pct(s2.green) : "–"}</td><td class="r hide-sm">${s2.n ? ft(Math.min(...r.shots.filter(lieOk).map(x => x.ft))) : "–"}</td></tr>`; }).join("")}
@@ -552,7 +552,7 @@
     app.querySelectorAll("[data-month]").forEach(keep(b => { view.month = b.dataset.month; }));
     app.querySelectorAll("[data-lsort]").forEach(keep(b => { view.lsort = b.dataset.lsort; }));
     app.querySelectorAll("[data-osort]").forEach(keep(b => { const k = b.dataset.osort; if ((view.osort || "avg") === k) view.odir = -(view.odir || 1); else { view.osort = k; view.odir = 1; } }));
-    [["per", "per"], ["cmp", "cmp"], ["dlie", "dlie"]].forEach(([id, k]) => { const el = $(id); if (el) el.onchange = () => { view[k] = el.value; const y = window.scrollY; draw(); window.scrollTo({ top: y }); }; });
+    [["per", "per"], ["cmp", "cmp"], ["dlie", "dlie"], ["tdist", "tdist"], ["pcmp", "cmp"]].forEach(([id, k]) => { const el = $(id); if (el) el.onchange = () => { view[k] = el.value; const y = window.scrollY; draw(); window.scrollTo({ top: y }); }; });
     app.querySelectorAll(".qr[data-player]").forEach(el => el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go("players", el.dataset.player); } });
     app.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => { if (view.sort === b.dataset.sort) view.dir *= -1; else { view.sort = b.dataset.sort; view.dir = 1; } draw(); });
     app.querySelectorAll("[data-cell]").forEach(td => { const pick = () => { view.cell = td.dataset.cell; draw(); }; td.onclick = pick; td.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } }; });
