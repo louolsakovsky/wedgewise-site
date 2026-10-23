@@ -309,6 +309,9 @@ table.roster .go{color:var(--muted);text-align:right}
 .dbar label span,.dsel span{font-size:14px;color:var(--ink)}
 .dbar select,.dsel select{font:inherit;font-weight:700;font-size:15px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:9px 34px 9px 12px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23041E42' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
 .dsel select{font-size:14px;padding:7px 30px 7px 10px}
+.dsels{display:flex;flex-wrap:wrap;gap:10px 18px;justify-content:flex-end}
+.dsels select{max-width:200px}
+@media (max-width:600px){.dsels{justify-content:flex-start}}
 .dbar p{margin:0;font-size:14px;flex-basis:100%}
 .fixedcmp{display:inline-flex;align-items:center;gap:10px}.fixedcmp span{font-size:14px;font-weight:700}.fixedcmp b{font-size:15px;background:var(--panel);border-radius:10px;padding:9px 12px}
 .qcards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px}
