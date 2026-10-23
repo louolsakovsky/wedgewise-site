@@ -355,9 +355,10 @@
     </div>`;
   }
   /* By distance: approaches, average proximity as a bar, greens hit. */
-  function byDistance(shots, rounds, who) {
+  function byDistance(shots, rounds, who, teamShots) {
     const rows = PROX_RANGES.map(r => ({ r, list: shots.filter(x => proxRange(x.yd) === r.k) })).filter(x => x.r.k !== "u50" || x.list.length);
-    const stats = rows.map(x => ({ ...x, st: who ? dstat(x.list, who) : pstat(x.list) }));
+    /* Benchmark from the whole team's shots in that range, so it's the same number on every player's page (Lou, Oct 22). */
+    const stats = rows.map(x => { const st = who ? dstat(x.list, who) : pstat(x.list); if (who && teamShots) st.ben = dstat(teamShots.filter(y => proxRange(y.yd) === x.r.k), who).ben; return { ...x, st }; });
     const B = who ? BENCH[who] : null;
     const max = Math.max(30, ...stats.map(x => Math.max(x.st.avg || 0, x.st.ben || 0)));
     const top = Math.ceil(max / 10) * 10;
@@ -368,7 +369,7 @@
         <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft average over ${st.n} approach${st.n === 1 ? "" : "es"}${B && st.ben != null ? ` · ${esc(B.name)} ${Math.round(st.ben)} ft` : ""}" tabindex="0"><span style="${barW(st.avg, top)}"></span><b style="${lblPush(st.avg, B && st.ben, top)}">${Math.round(st.avg)} ft</b>${B && st.ben != null ? benchMark(st.ben, top, B) : ""}</div>`}</td>
         ${B ? `<td class="r">${st.ben != null ? ft(st.ben) : `<span class="muted">–</span>`}</td>` : ""}<td class="r">${st.n ? pct(st.green) : "–"}</td>${tr ? `<td class="r hide-sm ${trendCls(d)}" style="font-size:14px;font-weight:700">${d == null ? `<span class="muted" style="font-weight:400">–</span>` : d === 0 ? "Same" : d < 0 ? `${-d} ft closer` : `${d} ft farther`}</td>` : ""}</tr>`; }).join("")}
     </tbody></table></div>
-    <div class="legend"><span class="barnote">Bar: average distance from the hole after the approach. Shorter is closer.${B ? ` Gold dash: ${esc(B.name)} average.` : ""}</span><span>Dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span>${B ? `<span>${esc(B.short)}: ${esc(B.name)} average from the same shots. No published benchmark under 50 yards or from bunkers; rough is an estimate.</span>` : ""}${tr ? `<span class="hide-sm">Vs before: last 5 rounds vs older rounds</span>` : ""}</div>`;
+    <div class="legend"><span class="barnote">Bar: average distance from the hole after the approach. Shorter is closer.${B ? ` Gold dash: ${esc(B.name)} average.` : ""}</span><span>Dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span>${B ? `<span>${esc(B.short)}: ${esc(B.name)} average from the team’s shots in that range (the same on every player’s page). No published benchmark under 50 yards or from bunkers; rough is an estimate.</span>` : ""}${tr ? `<span class="hide-sm">Vs before: last 5 rounds vs older rounds</span>` : ""}</div>`;
   }
   /* ---------- Benchmarks (Lou, Oct 22) ----------
      Proximity: PGA Tour and scratch-golfer averages from the fairway, by distance (PGA Tour 2021-22 season and
@@ -512,22 +513,28 @@
     if (!dp) view.dplayer = "all";
     const who1 = dp ? dp.name : "Team";
     const dShots = (dp ? windowShots(dp.rounds, per).cur : tw.cur).filter(x => dl === "all" || x.lie === dl);
-    const drows = PROX_RANGES.map(r => ({ r, st: dstat(dShots.filter(x => proxRange(x.yd) === r.k), who) })).filter(x => x.r.k !== "u50" || x.st.n);
+    /* The benchmark columns (Tour / Scratch ft and Tour Shots to Hole Out) always come from the whole team's shots in that range,
+       so they stay the same when a player is picked; only the player's own numbers change (Lou, Oct 22). */
+    const teamL = tw.cur.filter(x => dl === "all" || x.lie === dl);
+    const drows = PROX_RANGES.map(r => {
+      const st = dstat(dShots.filter(x => proxRange(x.yd) === r.k), who), tb = dstat(teamL.filter(x => proxRange(x.yd) === r.k), who);
+      return { r, st: { ...st, ben: tb.ben, gap: st.you != null && tb.ben != null && st.nb >= 3 ? st.you - tb.ben : null } };
+    }).filter(x => x.r.k !== "u50" || x.st.n);
     const top = Math.ceil(Math.max(30, ...drows.map(x => Math.max(x.st.avg || 0, x.st.ben || 0))) / 10) * 10;
     const hl = dl === "bunker" ? null : drows.filter(x => x.st.gap != null && x.st.nb >= 5).sort((a, b) => b.st.gap - a.st.gap)[0];
     /* Tour Shots to Hole Out: what a PGA Tour pro averages to hole out from the team's own shots in that range
        (each shot's exact yardage and lie), so All lies reflects the real fairway/rough/bunker mix (Lou, Oct 22). */
     const tourFinish = list => list.length ? list.reduce((a, x) => a + holeOut(x.lie === "rough" || x.lie === "bunker" ? x.lie : "fairway", x.yd), 0) / list.length : null;
-    const dist = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px"><div><h3 style="margin:0 0 2px">By distance</h3><p class="muted" style="margin:0;font-size:15px">${dp ? esc(dp.name) + "’s" : "Team"} average distance from the hole, with ${esc(B.name)} averages from the same shots.</p></div>
+    const dist = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px"><div><h3 style="margin:0 0 2px">By distance</h3><p class="muted" style="margin:0;font-size:15px">${dp ? esc(dp.name) + "’s" : "Team"} average distance from the hole, with ${esc(B.name)} averages from the team’s shots (they stay the same for every player).</p></div>
         <div class="dsels"><label class="dsel"><span>Player</span><select id="dplayer"><option value="all"${dp ? "" : " selected"}>All players</option>${withRounds.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${esc(p.id)}"${dp && dp.id === p.id ? " selected" : ""}>${esc(p.name)}</option>`).join("")}</select></label>
         <label class="dsel"><span>Lie</span><select id="dlie">${LIES.map(([k, l]) => `<option value="${k}"${k === dl ? " selected" : ""}>${l}</option>`).join("")}</select></label></div></div>
       <div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">${dp ? "Average" : "Team average"} <span class="muted">(0–${top} ft)</span></span><span class="show-sm">${dp ? "Avg" : "Team"}</span></th><th class="r">${esc(B.short)}</th><th class="r hide-sm">Greens</th>${women ? "" : `<th class="r hide-sm">Tour Shots to Hole Out</th>`}</tr></thead><tbody>
       ${drows.map(({ r, st }) => { return `<tr${hl && hl.r.k === r.k ? ' class="worst"' : ""}><td class="yd">${r.label}</td><td class="r">${st.n}</td>
         <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft ${dp ? esc(who1) + " average" : "team average"} over ${st.n} approach${st.n === 1 ? "" : "es"}${st.ben != null ? ` · ${esc(B.name)} ${Math.round(st.ben)} ft` : ""}" tabindex="0"><span style="${barW(st.avg, top)}"></span><b style="${lblPush(st.avg, st.ben, top)}">${Math.round(st.avg)} ft</b>${st.ben != null ? benchMark(st.ben, top, B) : ""}</div>`}</td>
         <td class="r">${st.ben != null ? ft(st.ben) : `<span class="muted">–</span>`}</td>
-        <td class="r hide-sm">${st.n ? pct(st.green) : "–"}</td>${women ? "" : `<td class="r hide-sm">${(() => { const v = tourFinish(dShots.filter(x => proxRange(x.yd) === r.k)); return v == null ? `<span class="muted">–</span>` : v.toFixed(2); })()}</td>`}</tr>`; }).join("")}
+        <td class="r hide-sm">${st.n ? pct(st.green) : "–"}</td>${women ? "" : `<td class="r hide-sm">${(() => { const v = tourFinish(teamL.filter(x => proxRange(x.yd) === r.k)); return v == null ? `<span class="muted">–</span>` : v.toFixed(2); })()}</td>`}</tr>`; }).join("")}
       </tbody></table></div>
-      <div class="legend"><span class="barnote">Bar: ${dp ? esc(who1) + "’s" : "team"} average. Gold dash: ${esc(B.name)} average.${hl ? ` Highlighted: the biggest gap to ${esc(B.short)}.` : ""}</span><span>No published benchmark under 50 yards or from bunkers.${dl !== "fairway" ? " Rough benchmarks are estimates." : ""}</span>${women ? "" : `<span class="hide-sm">Tour Shots to Hole Out: how many shots a PGA Tour pro averages to hole out from these same shots (same yardages and lies). Lower = easier shots.</span>`}</div></div>`;
+      <div class="legend"><span class="barnote">Bar: ${dp ? esc(who1) + "’s" : "team"} average. Gold dash: ${esc(B.name)} average.${hl ? ` Highlighted: the biggest gap to ${esc(B.short)}.` : ""}</span><span>No published benchmark under 50 yards or from bunkers.${dl !== "fairway" ? " Rough benchmarks are estimates." : ""}</span>${women ? "" : `<span class="hide-sm">Tour Shots to Hole Out: how many shots a PGA Tour pro averages to hole out from the team’s shots in that range (same yardages and lies). Lower = easier shots.</span>`}</div></div>`;
     const months = [...new Set(withRounds.flatMap(p => p.rounds.map(r => monthKey(r.day))))].sort().reverse();
     const monthPts = months.slice(0, 12).reverse().map(k => { const st = pstat(withRounds.flatMap(p => inMonth(p.rounds, k)).flatMap(r => r.shots)); return st.n ? { label: monthName(k), y: st.avg, tip: `${monthName(k, true)}: ${Math.round(st.avg)} ft team average over ${st.n} approaches` } : null; }).filter(Boolean);
     const trend = `<div class="panel"><h3 style="margin-bottom:2px">Team trend</h3><p class="muted" style="margin:0 0 12px;font-size:15px">Team average distance from the hole, month by month. Lower is better.</p>
@@ -566,7 +573,7 @@
       <div class="panel"><h3 style="margin-bottom:2px">Round by round</h3><p class="muted" style="margin:0 0 12px;font-size:15px">Average proximity in each of the last ${Math.min(10, p.rounds.length)} rounds${lieWord()}.</p>${proxTrendChart(p.rounds)}</div>
       <div class="panel"><div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px"><h3 style="margin:0">By distance</h3>
         ${women ? `<span class="fixedcmp"><span>Compare to</span><b>Scratch golfer</b></span>` : `<label class="dsel"><span>Compare to</span><select id="pcmp">${Object.keys(BENCH).map(k => `<option value="${k}"${k === who ? " selected" : ""}>${BENCH[k].name}</option>`).join("")}</select></label>`}</div>
-        ${byDistance(shots, p.rounds, who)}</div>
+        ${byDistance(shots, p.rounds, who, shotsOf(last.players.flatMap(q => q.rounds)))}</div>
       <div class="panel"><h3>Rounds</h3><div class="scroll"><table class="shots"><thead><tr><th>Date</th><th>Course</th><th class="hide-sm">Round</th><th class="r hide-sm">Approaches</th><th class="r">Average</th><th class="r">Greens</th><th class="r hide-sm">Closest</th></tr></thead><tbody>
         ${p.rounds.filter(r => r.shots.some(lieOk)).slice(0, 15).map(r => { const s2 = pstat(r.shots.filter(lieOk)); return `<tr><td style="white-space:nowrap">${esc(dayShort(r.day))}</td><td>${esc(r.course && r.course.name || "–")}</td><td class="hide-sm muted">${esc(ROUND_TYPES[r.type] || "")}</td>
           <td class="r hide-sm">${s2.n}</td><td class="r" style="white-space:nowrap"><b>${ft(s2.avg)}</b></td><td class="r">${s2.n ? pct(s2.green) : "–"}</td><td class="r hide-sm">${s2.n ? ft(Math.min(...r.shots.filter(lieOk).map(x => x.ft))) : "–"}</td></tr>`; }).join("")}
