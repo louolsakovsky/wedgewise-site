@@ -42,7 +42,8 @@
     chevron: '<polyline points="9 5 16 12 9 19"/>', back: '<polyline points="15 5 8 12 15 19"/>',
     up: '<path d="M12 19V6M6 11l6-6 6 6"/>', down: '<path d="M12 5v13M6 13l6 6 6-6"/>',
     refresh: '<path d="M20 12a8 8 0 1 1-2.4-5.7"/><polyline points="20 4 20 9 15 9"/>',
-    sort: '<path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+    sort: '<path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>', doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/><path d="M9 13h6M9 17h4"/>',
+    close: '<path d="M6 6l12 12M18 6L6 18"/>', image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   };
   const ic = (n, s = 18) => `<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 
@@ -126,10 +127,58 @@
   document.addEventListener("focusin", e => { const el = e.target.closest && e.target.closest("[data-tip]"); if (el) showTip(el); });
   document.addEventListener("scroll", () => { tip.hidden = true; }, { passive: true });
 
+  /* ---- Team branding (Lou, Oct 22): the team's color fills the page header and its logo sits next to the name.
+     Same color and logo on the team report. Default = WedgeLab navy. ---- */
+  const NAVY = "#041E42";
+  const TEAM_COLORS = [["#041E42", "Navy"], ["#7A1F2B", "Maroon"], ["#9E1B32", "Crimson"], ["#BF5700", "Burnt orange"], ["#154734", "Forest green"], ["#0033A0", "Royal blue"], ["#4E2A84", "Purple"], ["#111111", "Black"]];
+  const hexOk = c => /^#[0-9a-f]{6}$/i.test(c || "");
+  const isLight = c => { const n = parseInt(c.slice(1), 16), ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2] > 0.35; };
+  const teamColor = t => (t && hexOk(t.color) ? t.color : NAVY);
+  function brand(t) {
+    const h = document.querySelector(".pagehead"); if (!h) return;
+    const c = teamColor(t);
+    h.style.background = t ? c : "";
+    h.classList.toggle("light", !!t && isLight(c));
+    const lg = $("tlogo");
+    if (lg) { const ok = t && t.logo && /^data:image\//.test(t.logo); lg.hidden = !ok; const im = lg.querySelector("img"); if (ok && im.getAttribute("src") !== t.logo) im.src = t.logo; if (ok) im.alt = (t.school || t.name || "Team") + " logo"; }
+  }
+  /* Shrink an uploaded logo to 256 px so it saves inside the team row (no storage bucket needed). */
+  const shrinkLogo = file => new Promise((res, rej) => {
+    const u = window.URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const w = img.naturalWidth || 256, h = img.naturalHeight || 256, k = Math.min(1, 256 / Math.max(w, h));
+      const cv = document.createElement("canvas"); cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
+      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); window.URL.revokeObjectURL(u);
+      let out = cv.toDataURL("image/png"); if (out.length > 250000) out = cv.toDataURL("image/webp", 0.9);
+      if (out.length > 390000) out = cv.toDataURL("image/jpeg", 0.85);
+      out.length > 390000 ? rej(new Error("too big")) : res(out);
+    };
+    img.onerror = () => { window.URL.revokeObjectURL(u); rej(new Error("not an image")); };
+    img.src = u;
+  });
+
+  /* ---- Count-up numbers and a soft fade when a tab opens (Lou, Oct 22). Only on opening a tab, never on a filter change or refresh. ---- */
+  const calm = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cnt = (v, dec = 0) => v == null || !isFinite(v) ? "–" : `<span data-count="${v}" data-dec="${dec}">${dec ? Number(v).toFixed(dec) : Math.round(v)}</span>`;
+  let animNext = true;
+  function animate() {
+    if (calm()) return;
+    app.classList.remove("anim"); void app.offsetWidth; app.classList.add("anim");
+    setTimeout(() => app.classList.remove("anim"), 1200);
+    const els = [...app.querySelectorAll("[data-count]")], t0 = performance.now(), D = 750;
+    const step = now => {
+      const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 3);
+      els.forEach(el => { const v = +el.dataset.count, d = +el.dataset.dec || 0; el.textContent = d ? (v * e).toFixed(d) : Math.round(v * e); });
+      if (k < 1) requestAnimationFrame(step);
+    };
+    if (els.length) requestAnimationFrame(step);
+  }
+
   /* ---- signed out ---- */
   const title = (t, sub) => { const h = $("title"); if (h) h.textContent = t; const s = $("sub"); if (s) { s.hidden = !sub; s.innerHTML = sub || ""; } };
   let mode = /[?&]start=signup/.test(location.search) ? "signup" : "login";
   function login(msg) {
+    brand(null);
     const up = mode === "signup";
     title(up ? "Sign up your team" : "Coach login");
     html(`<div class="panel" style="max-width:520px;margin-top:12px">
@@ -153,6 +202,7 @@
   }
 
   function create(session) {
+    brand(null);
     title("Set up your team");
     html(`<div class="panel" style="max-width:560px;margin-top:12px">
       <h2>Set up your team</h2>
@@ -197,7 +247,7 @@
     else if (h === "proximity") { view.tab = "overview"; view.player = null; }
   };
   fromHash();
-  const go = (tab, player) => { view.tab = tab; view.player = player || null; if (!player) view.cell = null; const h = player ? "player=" + encodeURIComponent(player) : tab; if (location.hash.slice(1) !== h) history.pushState(null, "", "#" + h); draw(); window.scrollTo({ top: 0 }); };
+  const go = (tab, player) => { animNext = true; view.tab = tab; view.player = player || null; if (!player) view.cell = null; const h = player ? "player=" + encodeURIComponent(player) : tab; if (location.hash.slice(1) !== h) history.pushState(null, "", "#" + h); draw(); window.scrollTo({ top: 0 }); };
   window.addEventListener("popstate", () => { fromHash(); draw(); });
 
   let shownAt = 0, last = null; // last = { session, team, players, invites }
@@ -219,6 +269,7 @@
   function draw() {
     if (!last) return;
     const { t, active, players } = last;
+    brand(t);
     title(t.name, `${esc(t.school)} &nbsp;<span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span>`);
     const tabs = [["overview", "Dashboard"], ["players", "Roster"], ["team", "Settings"]]; // Lou, Oct 22: Dashboard / Roster / Settings
     const body = view.tab === "team" ? teamTab() : view.tab === "players" ? (view.player ? playerView() : playersTab()) : overviewTab();
@@ -229,6 +280,7 @@
     $("rf").onclick = async () => { $("rf").disabled = true; $("rf").innerHTML = ic("refresh") + " Refreshing…"; await render(); };
     $("out").onclick = e => { e.preventDefault(); if (DEMO) { location.href = "coach.html"; return; } sb.auth.signOut(); };
     wire();
+    if (animNext) { animNext = false; animate(); }
   }
 
   /* ---------- Players: sortable roster ---------- */
@@ -297,9 +349,9 @@
   function proxTiles(st, four, trend) {
     const t = (lbl, big, sub) => `<div class="tile"><div class="lbl">${lbl}</div><div class="big">${big}</div><div class="sub">${sub}</div></div>`;
     return `<div class="tiles ${four ? "t4" : ""}">
-      ${t("Average proximity", st.avg == null ? "–" : `${Math.round(st.avg)} <small>ft</small>`, trend != null ? `<span class="${trendCls(trend)}">${trendText(trend)}</span>` : `${st.n} approach${st.n === 1 ? "" : "es"}`)}
-      ${t("Greens hit", st.n ? pct(st.green) : "–", st.n ? `plus ${pct(st.fringe)} on the fringe` : "&nbsp;")}
-      ${(() => { const b = st.list ? st.list.filter(birdie).length : 0; return t("Birdie chances", st.n ? pct(b / st.n) : "–", st.n ? `${b} of ${st.n} on the green 12 ft & in` : "&nbsp;"); })()}
+      ${t("Average proximity", st.avg == null ? "–" : `${cnt(st.avg)} <small>ft</small>`, trend != null ? `<span class="${trendCls(trend)}">${trendText(trend)}</span>` : `${st.n} approach${st.n === 1 ? "" : "es"}`)}
+      ${t("Greens hit", st.n ? cnt(st.green * 100) + "%" : "–", st.n ? `plus ${pct(st.fringe)} on the fringe` : "&nbsp;")}
+      ${(() => { const b = st.list ? st.list.filter(birdie).length : 0; return t("Birdie chances", st.n ? cnt(b / st.n * 100) + "%" : "–", st.n ? `${b} of ${st.n} on the green 12 ft & in` : "&nbsp;"); })()}
     </div>`;
   }
   /* By distance: approaches, average proximity as a bar, greens hit. */
@@ -394,7 +446,7 @@
   /* Change in feet (negative = closer), or null when either side has fewer than 3 approaches. */
   const change = (a, b) => { const x = pstat(a), y = pstat(b); return x.n >= 3 && y.n >= 3 ? Math.round(x.avg) - Math.round(y.avg) : null; };
   const chg = (d, short) => d == null ? `<span class="muted">–</span>` : d === 0 ? `<span class="muted">${short ? "Same" : "Same as before"}</span>`
-    : `<span class="chg ${d < 0 ? "hi" : "lo"}">${ic(d < 0 ? "down" : "up", 13)}${Math.abs(d)} ft ${d < 0 ? "closer" : "farther"}</span>`;
+    : `<span class="chg ${d < 0 ? "hi" : "lo"}">${ic(d < 0 ? "down" : "up", 13)}${Math.abs(d)} ft<span class="cw"> ${d < 0 ? "closer" : "farther"}</span></span>`;
   const gapTxt = (g, who) => g == null ? `<span class="muted">–</span>` : Math.round(g) === 0 ? `<span class="muted">Even with ${BENCH[who].short}</span>`
     : `<span class="chg ${g < 0 ? "hi" : "lo"}">${Math.abs(Math.round(g))} ft ${g < 0 ? "closer" : "farther"}</span>`;
   const sgTxt = v => v == null ? `<span class="muted">–</span>` : `<span class="${v >= 0.005 ? "hi" : v <= -0.005 ? "lo" : "muted"}" style="font-weight:800">${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}</span>`;
@@ -409,6 +461,7 @@
     const bar = `<div class="dbar">
         <label><span>Showing</span><select id="per">${PERIODS.map(([k, l]) => `<option value="${k}"${k === per ? " selected" : ""}>${l}</option>`).join("")}</select></label>
         ${women ? `<span class="fixedcmp"><span>Compare to</span><b>Scratch golfer</b></span>` : `<label><span>Compare to</span><select id="cmp">${Object.keys(BENCH).map(k => `<option value="${k}"${k === who ? " selected" : ""}>${BENCH[k].name}</option>`).join("")}</select></label>`}
+        ${players.some(p => p.rounds.length) ? `<button type="button" class="btn ghost rpbtn" id="rpo">${ic("doc")} Team report (PDF)</button>` : ""}
         <p class="muted">${vsLine(per)} Approach shots from real rounds, logged by players in the app.</p></div>`;
     if (!withRounds.length) return bar + `<div class="panel empty-state"><p style="margin:0">No rounds logged yet. Once players log approach shots from their rounds, you’ll see who hits it closest, who’s trending, and what to practice.</p></div>`;
     /* The All players table can be narrowed to one distance range (Lou, Oct 22). */
@@ -423,7 +476,7 @@
     /* Card 1: closest (6+ approaches so one good round doesn't top the list). */
     const closest = live.filter(r => r.st.n >= 6).sort((a, b) => a.st.avg - b.st.avg).slice(0, 3);
     const c1 = `<div class="qcard"><div class="qk">Who’s hitting it closest?</div><h3>Average distance from the hole</h3>
-      ${closest.length ? closest.map(r => line(r.p, `<b class="qv">${Math.round(r.st.avg)} ft</b>`)).join("") : `<p class="muted">Needs 6+ approaches per player in this period.</p>`}
+      ${closest.length ? closest.map(r => line(r.p, `<b class="qv">${cnt(r.st.avg)} ft</b>`)).join("") : `<p class="muted">Needs 6+ approaches per player in this period.</p>`}
       <p class="qf">Team: <b>${ft(team.avg)}</b>${teamD != null ? " · " + chg(teamD, true) : ""}${team.ben != null ? `<br>On comparable shots: team <b>${ft(team.you)}</b> · ${esc(B.short)} <b>${ft(team.ben)}</b>` : ""}</p></div>`;
     /* Card 2: trending (most improved first, biggest slide last). */
     const tr = live.filter(r => r.d != null && r.d !== 0).sort((a, b) => a.d - b.d);
@@ -438,7 +491,7 @@
       ${worst ? `<div class="focus" data-tip="Compared on the same shots: fairway and rough, ${esc(B.name)} averages"><div class="fv">${worst.r.label} yd</div><div class="muted">Team ${ft(worst.st.you)} · ${esc(B.short)} ${ft(worst.st.ben)} · ${pct(worst.st.green)} greens</div></div>
       ${best && best.r.k !== worst.r.k ? `<p class="qf">Closest to ${esc(B.short)}: <b>${best.r.label} yd</b> (${gapTxt(best.st.gap, who)})</p>` : ""}` : `<p class="muted">Needs 5+ approaches from 50 yards and out.</p>`}</div>`;
     /* Player table, sortable by clicking a column. */
-    const cols = [["name", "Player"], ["avg", "Avg distance"], ["gap", "vs " + B.short], ["d", "Change"], ["green", "Greens hit"], ["birdie", "Birdie chances (12 ft & in)"], ["sg", "SG: Approach (vs PGA Tour)"], ["n", "Approaches"]].filter(c => !(women && c[0] === "sg"));
+    const cols = [["name", "Player"], ["avg", `<span class="hide-sm">Avg distance</span><span class="show-sm">Avg</span>`], ["gap", "vs " + B.short], ["d", "Change"], ["green", "Greens hit"], ["birdie", `<span class="hide-sm">Birdie chances (12 ft & in)</span><span class="show-sm">Birdie ≤12 ft</span>`], ["sg", "SG: Approach (vs PGA Tour)"], ["n", "Approaches"]].filter(c => !(women && c[0] === "sg"));
     const key = { name: r => r.p.name.toLowerCase(), avg: r => r.st.avg, gap: r => r.st.gap, d: r => r.d, green: r => -r.st.green, birdie: r => -r.st.birdie, sg: r => -(r.st.sg == null ? -9 : r.st.sg), n: r => -r.st.n }[view.osort || "avg"];
     const dir = view.odir || 1;
     const sorted = live.slice().sort((a, b) => { const x = key(a), y = key(b); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return (x < y ? -1 : x > y ? 1 : 0) * dir; });
@@ -448,7 +501,7 @@
       <label class="dsel"><span>Distance</span><select id="tdist"><option value="all"${td === "all" ? " selected" : ""}>All distances</option>${PROX_RANGES.map(r => `<option value="${r.k}"${r.k === td ? " selected" : ""}>${r.label} yd</option>`).join("")}</select></label></div>
       <div class="scroll"><table class="pt lb"><thead><tr>${cols.map(([k, l]) => `<th class="${k === "name" ? "" : "r"} ${hideSm.has(k) ? "hide-sm" : ""}"><button type="button" class="th" data-osort="${k}" ${(view.osort || "avg") === k ? "data-on" : ""}>${l}</button></th>`).join("")}</tr></thead><tbody>
       ${sorted.map(r => `<tr class="player" tabindex="0" data-player="${esc(r.p.id)}"><td><div class="who">${av(r.p)}<b>${esc(r.p.name)}</b></div></td>
-        <td class="r big">${Math.round(r.st.avg)}<small> ft</small></td><td class="r hide-sm">${gapTxt(r.st.gap, who)}</td><td class="r">${chg(r.d, true)}</td>
+        <td class="r big">${cnt(r.st.avg)}<small> ft</small></td><td class="r hide-sm">${gapTxt(r.st.gap, who)}</td><td class="r">${chg(r.d, true)}</td>
         <td class="r hide-sm">${pct(r.st.green)}</td><td class="r">${pct(r.st.birdie)}</td>${women ? "" : `<td class="r hide-sm">${sgTxt(r.st.sg)}</td>`}<td class="r hide-sm">${r.st.n}</td></tr>`).join("") || `<tr><td colspan="8" class="muted">No approaches ${td === "all" ? "" : `from ${tdLabel} yards `}in this period yet.</td></tr>`}
       </tbody></table></div>
       <div class="legend"><span><b>vs ${esc(B.short)}:</b> average distance compared with ${esc(B.name)} averages from the same distances and lies</span><span><b>Birdie chances (12 ft & in):</b> share of approaches that finished on the green 12 feet or closer to the hole</span>${women ? "" : `<span><b>SG: Approach (vs PGA Tour):</b> strokes gained per approach shot compared with a PGA Tour player from the same distance and lie. Above 0 = better than a tour pro.</span>`}${missing > 0 ? `<span>${missing} player${missing === 1 ? " has" : "s have"} no approaches ${td === "all" ? "" : `from ${tdLabel} yards `}in this period.</span>` : ""}</div></div>`;
@@ -479,8 +532,8 @@
   }
   /* A plain line chart: one dot per point, labeled with its value. Higher = farther from the hole.
      Drawn at the real page width so labels stay readable on phones and big screens. */
-  function lineChart(pts, aria, everyLabel) {
-    const W = Math.max(300, Math.min(940, (app.clientWidth || 900) - 50)), H = W < 500 ? 220 : 260, L = 46, R = 22, T = 28, B = 40;
+  function lineChart(pts, aria, everyLabel, fixedW) {
+    const W = fixedW || Math.max(300, Math.min(940, (app.clientWidth || 900) - 50)), H = W < 500 ? 220 : 260, L = 46, R = 22, T = 28, B = 40;
     const vals = pts.map(x => x.y), max = Math.max(...vals), min = Math.min(...vals);
     const lo = Math.max(0, min - Math.max(4, (max - min) * 0.35)), hi = max + Math.max(4, (max - min) * 0.35);
     const X = i => L + 14 + (pts.length === 1 ? 0 : (i / (pts.length - 1)) * (W - L - R - 28)), Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
@@ -515,6 +568,69 @@
       </tbody></table></div>${p.rounds.length > 15 ? `<p class="muted" style="font-size:13px;margin:8px 0 0">Latest 15 of ${p.rounds.length} rounds.</p>` : ""}</div>`;
   }
 
+  /* ---------- Team report (Lou, Oct 22): a clean one-to-two page summary of the Dashboard, in the team's colors,
+     for the coach to save as a PDF and share. Uses the Dashboard's current "Showing" and "Compare to". ---------- */
+  function reportHTML() {
+    const { t } = last, players = last.players;
+    const women = t.gender === "women", per = view.per || "90", who = women ? "scratch" : (view.cmp || "tour"), B = BENCH[who];
+    const withRounds = players.filter(p => p.rounds.length);
+    const rows = withRounds.map(p => { const w = windowShots(p.rounds, per); return { p, st: dstat(w.cur, who), d: change(w.recent, w.before) }; }).filter(r => r.st.n);
+    const tw = windowShots(withRounds.flatMap(p => p.rounds), per), team = dstat(tw.cur, who), teamD = change(tw.recent, tw.before);
+    const perName = (PERIODS.find(x => x[0] === per) || [, ""])[1];
+    const today = new Date().toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+    const c = teamColor(t), light = isLight(c);
+    const kpi = (lbl, big, sub) => `<div class="rk"><div class="rkl">${lbl}</div><div class="rkb">${big}</div><div class="rks">${sub || "&nbsp;"}</div></div>`;
+    const chgTxt = d => d == null ? "" : d === 0 ? "Same as before" : `${Math.abs(d)} ft ${d < 0 ? "closer" : "farther"} than before`;
+    const closest = rows.filter(r => r.st.n >= 6).sort((a, b) => a.st.avg - b.st.avg).slice(0, 3);
+    const improved = rows.filter(r => r.d != null && r.d < 0).sort((a, b) => a.d - b.d).slice(0, 3);
+    const bands = PROX_RANGES.filter(r => B.fw[r.k] != null).map(r => ({ r, st: dstat(tw.cur.filter(x => proxRange(x.yd) === r.k), who) })).filter(x => x.st.nb >= 5 && x.st.gap != null);
+    const worst = bands.slice().sort((a, b) => b.st.gap - a.st.gap)[0];
+    const list = (arr, val) => arr.length ? `<ol>${arr.map(r => `<li><span>${esc(r.p.name)}</span><b>${val(r)}</b></li>`).join("")}</ol>` : `<p class="rmuted">Not enough approaches yet.</p>`;
+    const drows = PROX_RANGES.map(r => ({ r, st: dstat(tw.cur.filter(x => proxRange(x.yd) === r.k), who) })).filter(x => x.r.k !== "u50" || x.st.n);
+    const top = Math.ceil(Math.max(30, ...drows.map(x => Math.max(x.st.avg || 0, x.st.ben || 0))) / 10) * 10;
+    const months = [...new Set(withRounds.flatMap(p => p.rounds.map(r => monthKey(r.day))))].sort().reverse();
+    const monthPts = months.slice(0, 12).reverse().map(k => { const st = pstat(withRounds.flatMap(p => inMonth(p.rounds, k)).flatMap(r => r.shots)); return st.n ? { label: monthName(k), y: st.avg, tip: "" } : null; }).filter(Boolean);
+    const sorted = rows.slice().sort((a, b) => a.st.avg - b.st.avg);
+    return `<article class="rp" style="--team:${c}">
+      <header class="rph${light ? " light" : ""}">${t.logo ? `<img class="rplogo" src="${esc(t.logo)}" alt="">` : ""}
+        <div class="rpt"><div class="rpk">Team report · Inside 150 yards</div><h1>${esc(t.name)}</h1><div class="rps">${esc(t.school || "")}</div></div>
+        <div class="rpm"><b>${esc(perName)}</b><span>${esc(today)}</span><span>Compared with ${esc(B.name)}</span></div></header>
+      <section class="rkpis">
+        ${kpi("Team average", ft(team.avg), chgTxt(teamD))}
+        ${kpi("vs " + esc(B.short), team.gap == null ? "–" : Math.round(team.gap) === 0 ? "Even" : `${Math.abs(Math.round(team.gap))} ft ${team.gap < 0 ? "closer" : "farther"}`, team.ben != null ? `Team ${ft(team.you)} · ${esc(B.short)} ${ft(team.ben)}` : "")}
+        ${kpi("Greens hit", team.n ? pct(team.green) : "–", team.n ? `plus ${pct(team.fringe)} on the fringe` : "")}
+        ${kpi("Birdie chances", team.n ? pct(team.birdie) : "–", "on the green 12 ft & in")}
+        ${women ? "" : kpi("SG: Approach", team.sg == null ? "–" : (team.sg >= 0 ? "+" : "−") + Math.abs(team.sg).toFixed(2), "per approach vs PGA Tour")}
+        ${kpi("Approaches", tw.cur.length.toLocaleString(), `${tw.rounds} round${tw.rounds === 1 ? "" : "s"}`)}
+      </section>
+      <section class="rcols">
+        <div class="rbox"><h3>Closest to the hole</h3>${list(closest, r => ft(r.st.avg))}</div>
+        <div class="rbox"><h3>Most improved</h3>${list(improved, r => `${Math.abs(r.d)} ft closer`)}</div>
+        <div class="rbox"><h3>Biggest gap to ${esc(B.short)}</h3>${worst ? `<div class="rfoc">${worst.r.label} yd</div><p class="rmuted">Team ${ft(worst.st.you)} · ${esc(B.short)} ${ft(worst.st.ben)} · ${pct(worst.st.green)} greens</p>` : `<p class="rmuted">Needs 5+ approaches from 50 yards and out.</p>`}</div>
+      </section>
+      <section><h2>All players</h2><table class="rtab"><thead><tr><th>Player</th><th class="r">Avg distance</th><th class="r">vs ${esc(B.short)}</th><th class="r">Change</th><th class="r">Greens</th><th class="r">Birdie chances</th>${women ? "" : `<th class="r">SG: Approach</th>`}<th class="r">Approaches</th></tr></thead><tbody>
+        ${sorted.map(r => `<tr><td>${esc(r.p.name)}</td><td class="r"><b>${ft(r.st.avg)}</b></td><td class="r">${r.st.gap == null ? "–" : Math.round(r.st.gap) === 0 ? "Even" : `${Math.abs(Math.round(r.st.gap))} ft ${r.st.gap < 0 ? "closer" : "farther"}`}</td><td class="r">${r.d == null ? "–" : r.d === 0 ? "Same" : `${Math.abs(r.d)} ft ${r.d < 0 ? "closer" : "farther"}`}</td><td class="r">${pct(r.st.green)}</td><td class="r">${pct(r.st.birdie)}</td>${women ? "" : `<td class="r">${r.st.sg == null ? "–" : (r.st.sg >= 0 ? "+" : "−") + Math.abs(r.st.sg).toFixed(2)}</td>`}<td class="r">${r.st.n}</td></tr>`).join("") || `<tr><td colspan="8">No approaches in this period yet.</td></tr>`}
+      </tbody></table></section>
+      <section class="rnobreak"><h2>By distance</h2><table class="rtab"><thead><tr><th>Yards</th><th class="r">Approaches</th><th>Team average</th><th class="r">${esc(B.short)}</th><th class="r">Greens</th></tr></thead><tbody>
+        ${drows.map(({ r, st }) => `<tr${worst && worst.r.k === r.k ? ' class="rw"' : ""}><td><b>${r.label}</b></td><td class="r">${st.n}</td><td class="rbar">${st.avg == null ? "–" : `<span class="rtrack"><i style="width:${(Math.min(1, st.avg / top) * 100).toFixed(1)}%"></i>${st.ben != null ? `<em style="left:${(Math.min(1, st.ben / top) * 100).toFixed(1)}%"></em>` : ""}</span><b>${ft(st.avg)}</b>`}</td><td class="r">${st.ben != null ? ft(st.ben) : "–"}</td><td class="r">${st.n ? pct(st.green) : "–"}</td></tr>`).join("")}
+      </tbody></table><p class="rmuted">Bar: team average. Gold mark: ${esc(B.name)} average from the same shots. No published benchmark under 50 yards or from bunkers; rough is an estimate.</p></section>
+      ${monthPts.length >= 2 ? `<section class="rnobreak"><h2>Team trend</h2><p class="rmuted" style="margin-top:-4px">Team average distance from the hole, month by month. Lower is better.</p>${lineChart(monthPts, "Team average proximity by month", true, 680)}</section>` : ""}
+      <footer class="rpf"><span>Approach shots from real rounds, logged by players in the WedgeLab app. ${women ? "Women’s team: compared with scratch golfers. " : ""}Benchmarks: PGA Tour and scratch-golfer averages (PGA Tour stats and Arccos data, via Golf Digest)${women ? "" : "; strokes gained uses Mark Broadie’s PGA Tour tables"}.</span><b>WedgeLab · wedgelab.app</b></footer>
+    </article>`;
+  }
+  function openReport() {
+    closeReport();
+    const w = document.createElement("div"); w.id = "rpw"; w.setAttribute("role", "dialog"); w.setAttribute("aria-modal", "true"); w.setAttribute("aria-label", "Team report");
+    w.innerHTML = `<div class="rpbar"><button type="button" class="linkbtn" id="rpx">${ic("close")} Close</button><span class="hide-sm">Team report · ${esc(last.t.name)}</span><button type="button" class="btn" id="rpp">${ic("doc")} Save as PDF</button></div>
+      <div class="rpscroll">${reportHTML()}<p class="rphint">Tap <b>Save as PDF</b>, then choose “Save as PDF” (computer) or Share › Save to Files (iPhone).</p></div>`;
+    document.body.appendChild(w); document.body.classList.add("rp-open");
+    const fname = document.title; document.title = `${last.t.name} team report`;
+    $("rpx").onclick = closeReport; $("rpp").onclick = () => window.print();
+    w.onkeydown = e => { if (e.key === "Escape") closeReport(); };
+    w._title = fname; $("rpp").focus();
+  }
+  function closeReport() { const w = $("rpw"); if (!w) return; document.title = w._title || document.title; w.remove(); document.body.classList.remove("rp-open"); const b = $("rpo"); if (b) b.focus(); }
+
   /* ---------- Team: billing, code, invites ---------- */
   function teamTab() {
     const { session, t, active, players, inv } = last;
@@ -530,6 +646,14 @@
     return `<div class="grid2">
       <div>
         <div class="panel"><div class="row" style="justify-content:space-between"><div><h3 style="margin:0">${esc(t.name)}</h3><div class="muted">${esc(t.school)}</div></div><span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span></div>${payBox}</div>
+        <div class="panel"><h3>Team branding</h3><p class="muted" style="font-size:15px;margin:0 0 14px">Your logo and team color show at the top of your dashboard and on team reports.</p>
+          <div class="brandrow"><div class="lgbox" style="background:${teamColor(t)}">${t.logo ? `<img src="${esc(t.logo)}" alt="Team logo">` : `<span>${ic("image", 26)}</span>`}</div>
+            <div><label class="btn ghost filebtn">${ic("image")} ${t.logo ? "Change logo" : "Upload logo"}<input id="lf" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" data-draft="no"></label>
+              ${t.logo ? `<button type="button" class="linkbtn" id="lr">Remove logo</button>` : ""}<div class="muted" style="font-size:13px;margin-top:6px">PNG with a see-through background looks best.</div></div></div>
+          <div class="swlab">Team color</div>
+          <div class="swatches" role="group" aria-label="Team color">${TEAM_COLORS.map(([c, n]) => `<button type="button" class="sw" data-color="${c}" style="background:${c}" aria-label="${n}" aria-pressed="${teamColor(t).toLowerCase() === c.toLowerCase()}" title="${n}"></button>`).join("")}
+            <label class="sw custom" title="Pick any color" aria-label="Pick any color"><input id="cc" type="color" value="${teamColor(t)}" data-draft="no"><span>+</span></label></div>
+          <p id="bm" class="muted" style="font-size:14px;margin:10px 0 0"></p></div>
         <div class="panel"><h3>Team type</h3><label class="dsel" style="margin-top:4px"><span>This is a</span><select id="tg2"><option value=""${!t.gender ? " selected" : ""}>Choose…</option><option value="men"${t.gender === "men" ? " selected" : ""}>Men’s team</option><option value="women"${t.gender === "women" ? " selected" : ""}>Women’s team</option></select></label>
           <p class="muted" id="tgm" style="font-size:14px;margin:10px 0 0">Women’s teams are compared with scratch golfers. Published LPGA averages by distance aren’t available yet.</p></div>
         <div class="panel"><h3>Team code</h3>
@@ -564,6 +688,7 @@
     app.querySelectorAll(".qr[data-player]").forEach(el => el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go("players", el.dataset.player); } });
     app.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => { if (view.sort === b.dataset.sort) view.dir *= -1; else { view.sort = b.dataset.sort; view.dir = 1; } draw(); });
     app.querySelectorAll("[data-cell]").forEach(td => { const pick = () => { view.cell = td.dataset.cell; draw(); }; td.onclick = pick; td.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } }; });
+    const ro = $("rpo"); if (ro) ro.onclick = openReport;
     const q = $("q"); if (q) q.oninput = () => { view.q = q.value; const pos = q.selectionStart; draw(); const n = $("q"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {} };
     if (view.tab !== "team") return;
     const t = L.t, msg = `Join ${t.name} on WedgeLab. Download WedgeLab from the App Store, sign in, then open Settings (the gear on Home) → Join a team, and enter code ${t.code}.`;
@@ -573,6 +698,24 @@
       if (error) { $("tgm").className = "err"; $("tgm").textContent = "Couldn’t save that yet. (Run supabase/team_gender.sql once in Supabase.)"; return; }
       t.gender = tg2.value || null; $("tgm").className = "ok"; $("tgm").textContent = "Saved.";
     };
+    /* Team branding: logo + color. Saved right away; the demo keeps changes on this page only. */
+    const saveBrand = async (patch, okMsg) => {
+      const m = $("bm"); m.className = "muted"; m.textContent = "Saving…";
+      if (!DEMO) {
+        const { error } = await sb.from("teams").update(patch).eq("id", t.id);
+        if (error) { m.className = "err"; m.textContent = /logo|color/i.test(error.message || "") ? "Couldn’t save that yet. (Run supabase/team_brand.sql once in Supabase.)" : "Couldn’t save that. Try again."; return; }
+      }
+      Object.assign(t, patch); const y = window.scrollY; draw(); window.scrollTo({ top: y });
+      const m2 = $("bm"); m2.className = DEMO ? "muted" : "ok"; m2.textContent = DEMO ? demoNote : okMsg;
+    };
+    const lf = $("lf"); if (lf) lf.onchange = async () => {
+      const f = lf.files && lf.files[0]; if (!f) return;
+      try { await saveBrand({ logo: await shrinkLogo(f) }, "Logo saved."); }
+      catch { const m = $("bm"); m.className = "err"; m.textContent = "That file didn’t work. Use a PNG, JPG or SVG of your logo."; }
+    };
+    const lr = $("lr"); if (lr) lr.onclick = () => saveBrand({ logo: null }, "Logo removed.");
+    app.querySelectorAll("[data-color]").forEach(b => b.onclick = () => saveBrand({ color: b.dataset.color }, "Color saved."));
+    const cc = $("cc"); if (cc) cc.onchange = () => saveBrand({ color: cc.value }, "Color saved.");
     if (inviteNote) { const im = $("im"); im.className = "err"; im.textContent = inviteNote; inviteNote = ""; }
     $("cp").onclick = async () => { try { await navigator.clipboard.writeText(msg); $("cp").textContent = "Copied"; } catch { prompt("Copy this message:", msg); } };
     $("add").onsubmit = async e => {

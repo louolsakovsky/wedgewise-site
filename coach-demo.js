@@ -63,12 +63,14 @@
     };
   }
 
+  /* A made-up school crest so the demo shows team branding (Lou, Oct 22). */
+  const DEMO_LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTQwIj48cGF0aCBkPSJNNjAgNCAxMTIgMjJ2NDRjMCAzNC0yMiA1OC01MiA3MEMzMCAxMjQgOCAxMDAgOCA2NlYyMnoiIGZpbGw9IiM3QTFGMkIiLz48cGF0aCBkPSJNNjAgMTQgMTAyIDI5djM3YzAgMjgtMTggNDgtNDIgNTktMjQtMTEtNDItMzEtNDItNTlWMjl6IiBmaWxsPSJub25lIiBzdHJva2U9IiNDOUE0NEMiIHN0cm9rZS13aWR0aD0iNCIvPjx0ZXh0IHg9IjYwIiB5PSI4NCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsc2VyaWYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iNDQiIGZpbGw9IiNmZmYiPkRVPC90ZXh0PjxwYXRoIGQ9Ik0zNCAxMDBoNTIiIHN0cm9rZT0iI0M5QTQ0QyIgc3Ryb2tlLXdpZHRoPSI0Ii8+PC9zdmc+";
   const roster = PLAYERS.map(player);
   roster.push({ user_id: "demo-coach", name: "Coach Taylor", role: "coach", joined_at: iso(NOW - 70 * DAY), state: null });
 
   window.WEDGELAB_DEMO = {
     session: { user: { email: "demo@wedgelab.app" } },
-    team: { id: "demo", gender: "men", name: "Demo University Golf", school: "Demo University", code: "DEMO12", coach_code: "COACH7", seats: 12, status: "active",
+    team: { id: "demo", gender: "men", color: "#7A1F2B", logo: DEMO_LOGO, name: "Demo University Golf", school: "Demo University", code: "DEMO12", coach_code: "COACH7", seats: 12, status: "active",
       paid_until: dayStr(NOW + 300 * DAY), stripe_subscription: "demo" },
     roster,
     invites: [
