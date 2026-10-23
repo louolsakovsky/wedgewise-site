@@ -43,7 +43,8 @@
     up: '<path d="M12 19V6M6 11l6-6 6 6"/>', down: '<path d="M12 5v13M6 13l6 6 6-6"/>',
     refresh: '<path d="M20 12a8 8 0 1 1-2.4-5.7"/><polyline points="20 4 20 9 15 9"/>',
     sort: '<path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>', doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/><path d="M9 13h6M9 17h4"/>',
-    close: '<path d="M6 6l12 12M18 6L6 18"/>', image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+    close: '<path d="M6 6l12 12M18 6L6 18"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/>',
+    check: '<polyline points="5 12.5 10 17 19 7"/>', image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   };
   const ic = (n, s = 18) => `<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 
@@ -122,7 +123,16 @@
 
   /* One floating tooltip for every chart mark (anything with data-tip). */
   const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; document.body.appendChild(tip);
-  const showTip = el => { const r = el.getBoundingClientRect(); tip.textContent = el.dataset.tip; tip.style.left = r.left + r.width / 2 + "px"; tip.style.top = r.top + "px"; tip.hidden = false; };
+  const showTip = el => {
+    const r = el.getBoundingClientRect(); tip.textContent = el.dataset.tip; tip.classList.toggle("wide", el.classList.contains("ii"));
+    tip.style.left = r.left + r.width / 2 + "px"; tip.style.top = r.top + "px"; tip.hidden = false;
+    /* Keep it on screen near the edges. */
+    const t = tip.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+    if (t.left < 8) tip.style.left = parseFloat(tip.style.left) + (8 - t.left) + "px"; else if (t.right > vw - 8) tip.style.left = parseFloat(tip.style.left) - (t.right - vw + 8) + "px";
+  };
+  /* ⓘ next to a heading: tap or hover to read what it means (Lou, Oct 22: replaces the gray fine print under tables). */
+  const info = text => `<button type="button" class="ii" data-tip="${esc(text)}" aria-label="${esc(text)}">${ic("info", 15)}</button>`;
+  document.addEventListener("click", e => { const el = e.target.closest && e.target.closest(".ii"); if (el) { e.preventDefault(); e.stopPropagation(); showTip(el); } else if (!(e.target.closest && e.target.closest("[data-tip]"))) tip.hidden = true; }, true);
   document.addEventListener("mouseover", e => { const el = e.target.closest && e.target.closest("[data-tip]"); if (el) showTip(el); else tip.hidden = true; });
   document.addEventListener("focusin", e => { const el = e.target.closest && e.target.closest("[data-tip]"); if (el) showTip(el); });
   document.addEventListener("scroll", () => { tip.hidden = true; }, { passive: true });
@@ -139,6 +149,8 @@
     const c = teamColor(t);
     h.style.background = t ? c : "";
     h.classList.toggle("light", !!t && isLight(c));
+    /* Charts (bars, trend lines) in the team's color; light colors fall back to navy so bars stay readable (Lou, Oct 22). */
+    document.documentElement.style.setProperty("--tc", t && !isLight(c) ? c : NAVY);
     const lg = $("tlogo");
     if (lg) { const ok = t && t.logo && /^data:image\//.test(t.logo); lg.hidden = !ok; const im = lg.querySelector("img"); if (ok && im.getAttribute("src") !== t.logo) im.src = t.logo; if (ok) im.alt = (t.school || t.name || "Team") + " logo"; }
   }
@@ -272,8 +284,8 @@
     brand(t);
     title(t.name, `${esc(t.school)} &nbsp;<span class="pill ${active ? "on" : "wait"}">${active ? "Active" : t.status === "ended" ? "Ended" : "Waiting for payment"}</span>`);
     const tabs = [["overview", "Dashboard"], ["players", "Roster"], ["team", "Settings"]]; // Lou, Oct 22: Dashboard / Roster / Settings
-    const body = view.tab === "team" ? teamTab() : view.tab === "players" ? (view.player ? playerView() : playersTab()) : overviewTab();
-    html(`${DEMO ? `<div class="callout" style="margin-bottom:16px"><b>Demo team.</b> Made-up players, practice shots and rounds to show how the dashboard works. Nothing here is real or saved. <a href="coach.html">Leave demo</a></div>` : ""}<div class="tabs dtabs" role="tablist" aria-label="Dashboard">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${view.tab === k}">${l}${k === "players" ? ` <span class="pill">${players.length}</span>` : ""}</button>`).join("")}
+    const body = view.tab === "team" ? teamTab() : view.tab === "players" ? (view.player ? playerView() : playersTab()) : setupCard() + overviewTab();
+    html(`${DEMO ? `<div class="callout" style="margin-bottom:16px"><b>Demo team.</b> Made-up players, practice shots and rounds to show how the dashboard works. Nothing here is real or saved. <a href="coach.html?start=signup">Sign up your team</a> · <a href="teams.html">Back to WedgeLab Teams</a></div>` : ""}<div class="tabs dtabs" role="tablist" aria-label="Dashboard">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${view.tab === k}">${l}${k === "players" ? ` <span class="pill">${players.length}</span>` : ""}</button>`).join("")}
       <span class="sp"></span><button type="button" id="rf" title="Refresh">${ic("refresh")} <span class="hide-sm" id="upd">Refresh</span></button></div>${body}
       <p class="muted" style="font-size:14px;margin-top:28px">Signed in as ${esc(last.session.user.email)} · <a href="#" id="out">Sign out</a></p>`);
     app.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => go(b.dataset.tab));
@@ -281,6 +293,31 @@
     $("out").onclick = e => { e.preventDefault(); if (DEMO) { location.href = "coach.html"; return; } sb.auth.signOut(); };
     wire();
     if (animNext) { animNext = false; animate(); }
+  }
+
+  /* ---------- Getting started (Lou, Oct 22): a checklist on the Dashboard for new coaches until everything is set up.
+     "Hide" keeps it closed on this device. ---------- */
+  const setupKey = () => "ww.coach.setupHidden." + (last && last.t ? last.t.id : "");
+  function setupCard() {
+    const { t, active, inv, players } = last;
+    try { if (localStorage.getItem(setupKey())) return ""; } catch {}
+    const steps = [
+      ["Switch your team on", active, "Pay by card, or ask for an invoice if your school pays by purchase order."],
+      ["Add your team logo", !!t.logo, "It shows at the top of your dashboard and on team reports."],
+      ["Pick your team color", !!t.color, "Your header and charts use it."],
+      ["Choose men’s or women’s team", !!t.gender, "Sets which benchmarks your team is compared with."],
+      ["Invite your players", inv.length > 0 || players.length > 0, "Add their emails. Each player gets your team code."],
+      ["Players join with your team code", players.length > 0, "In the app: Settings › Join a team."],
+    ];
+    const done = steps.filter(x => x[1]).length;
+    if (done === steps.length) return "";
+    const next = steps.findIndex(x => !x[1]);
+    return `<div class="panel setup"><div class="row" style="justify-content:space-between;align-items:center;gap:12px">
+        <div><h3 style="margin:0">Getting started</h3><div class="muted" style="font-size:14px">${done} of ${steps.length} done</div></div>
+        <button type="button" class="linkbtn" id="sh">Hide</button></div>
+      <div class="sbar" aria-hidden="true"><span style="width:${Math.round(done / steps.length * 100)}%"></span></div>
+      <ol class="chk">${steps.map(([h, ok, sub], i) => `<li class="${ok ? "done" : i === next ? "next" : ""}"><span class="chk-n">${ok ? ic("check", 14) : i + 1}</span>
+        <div class="chk-t"><b>${h}</b><span>${sub}</span></div>${!ok && i < 5 ? `<button type="button" class="btn ${i === next ? "" : "ghost"} sgo" data-tab="team">${i === next ? "Do this next" : "Settings"}</button>` : ""}</li>`).join("")}</ol></div>`;
   }
 
   /* ---------- Players: sortable roster ---------- */
@@ -306,19 +343,40 @@
     if (!p) return `<button class="back" type="button" data-tab="players">${ic("back")} Roster</button><div class="panel empty-state">This player isn’t on the team anymore.</div>`;
     const head = `<button class="back" type="button" data-tab="players">${ic("back")} Roster</button>
       <div class="panel" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><span class="av" style="width:56px;height:56px;font-size:20px">${esc(initials(p.name))}</span>
-        <div style="flex:1;min-width:180px"><h2 style="margin:0">${esc(p.name)}</h2><div class="muted">${esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level, p.joined ? "Joined " + dateShort(p.joined) : ""].filter(Boolean).join(" · "))}</div></div></div>`;
+        <div style="flex:1;min-width:180px"><h2 style="margin:0">${esc(p.name)}</h2><div class="muted">${esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level, p.joined ? "Joined " + dateShort(p.joined) : ""].filter(Boolean).join(" · "))}</div></div>${playerSummary(p)}</div>`;
     if (!p.hasState || !p.clubs.length) return head + `<div class="panel empty-state">${p.hasState ? "This player hasn’t finished setup yet." : "Numbers show once the team is active and the player has logged shots."}</div>` + (p.rounds.length ? playerProx(p) : "");
     if (!view.cell || !p.all.some(x => x.club.id + "|" + x.swing.k === view.cell)) { const top = p.all.slice().sort((a, b) => b.n - a.n)[0]; view.cell = top ? top.club.id + "|" + top.swing.k : null; }
     const mx = `<div class="scroll"><table class="mx"><thead><tr><th>Club</th>${p.swings.map(w => `<th>${esc(w.label)}</th>`).join("")}</tr></thead><tbody>
       ${p.clubs.map(c => `<tr><td class="cl">${esc(c.name)}${c.loft != null ? `<small>${esc(c.loft)}°</small>` : ""}</td>${p.swings.map(w => { const x = p.cell(c.id, w.k), k = c.id + "|" + w.k; return x
         ? `<td class="cell" tabindex="0" role="button" data-cell="${esc(k)}" aria-pressed="${view.cell === k}" aria-label="${esc(c.name)} ${esc(w.label)}: ${Math.round(x.carry)} yards, ${x.n} shots"><div class="n ${level(x.n)}">${Math.round(x.carry)}</div><div class="pm">${x.n} shot${x.n === 1 ? "" : "s"}</div></td>`
         : `<td class="cell empty">–</td>`; }).join("")}</tr>`).join("")}
-      </tbody></table></div>
-      <div class="legend"><span>Big number: carry in yards, normalized to 75°F at sea level</span><span>Small number: shots behind it</span><span>Color: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> shots</span></div>`;
+      </tbody></table></div>`;
     const [cid, k] = (view.cell || "|").split("|");
     const c = p.clubs.find(x => x.id === cid), w = p.swings.find(x => x.k === k), x = c && w ? p.cell(cid, k) : null;
     /* Proximity (real-round results) first, then the wedge numbers (Lou, Oct 19). */
-    return head + playerProx(p) + `<h3 class="sect">Wedge numbers</h3><div class="grid2"><div class="panel"><h3>Numbers</h3>${mx}</div>${x ? `<div class="panel">${detail(c, w, x)}</div>` : ""}</div>`;
+    return head + playerProx(p) + `<h3 class="sect">Wedge numbers</h3><div class="grid2"><div class="panel"><h3 class="ih">Numbers ${info("Big number: carry in yards, normalized to 75°F at sea level. Small number: shots behind it. Color: red 0–1, yellow 2–4, green 5+ shots (same as the app).")}</h3>${mx}</div>${x ? `<div class="panel">${detail(c, w, x)}</div>` : ""}</div>`;
+  }
+  /* Summary strip at the top of a player's page (Lou, Oct 22): team rank, average, vs Tour/Scratch, change and a small
+     line of the last 10 rounds, for the Dashboard's "Showing" period. */
+  function playerSummary(p) {
+    if (!p.rounds.length) return "";
+    const per = view.per || "90", women = last.t.gender === "women", who = women ? "scratch" : (view.cmp || "tour"), B = BENCH[who];
+    const ranked = last.players.filter(q => q.rounds.length).map(q => ({ q, st: dstat(windowShots(q.rounds, per).cur, who) })).filter(x => x.st.n >= 6).sort((a, b) => a.st.avg - b.st.avg);
+    const w = windowShots(p.rounds, per), st = dstat(w.cur, who), d = change(w.recent, w.before), rank = ranked.findIndex(x => x.q.id === p.id);
+    const pts = p.rounds.slice(0, 10).map(r => pstat(r.shots).avg).filter(v => v != null).reverse();
+    let spark = `<span class="muted" style="font-size:13px">Needs 2 rounds</span>`;
+    if (pts.length >= 2) {
+      const W = 132, H = 38, lo = Math.min(...pts), hi = Math.max(...pts), X = i => 3 + i * (W - 6) / (pts.length - 1), Y = v => hi === lo ? H / 2 : H - 4 - (v - lo) / (hi - lo) * (H - 8); /* higher = farther, like the trend charts */
+      spark = `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Average proximity in the last ${pts.length} rounds, from ${Math.round(pts[0])} to ${Math.round(pts[pts.length - 1])} feet"><path d="${pts.map((v, i) => (i ? "L" : "M") + X(i).toFixed(1) + "," + Y(v).toFixed(1)).join(" ")}"/><circle cx="${X(pts.length - 1).toFixed(1)}" cy="${Y(pts[pts.length - 1]).toFixed(1)}" r="3.5"/></svg>`;
+    }
+    const perName = (PERIODS.find(x => x[0] === per) || [, ""])[1];
+    const item = (l, v, sub) => `<div class="psi"><div class="pl">${l}</div><div class="pv">${v}</div>${sub ? `<div class="ps">${sub}</div>` : ""}</div>`;
+    return `<div class="psum"><div class="pper">${esc(perName)}</div><div class="psrow">
+      ${item("Team rank", rank >= 0 ? `#${rank + 1}<small> of ${ranked.length}</small>` : "–", rank >= 0 ? "closest to the hole" : "needs 6+ approaches")}
+      ${item("Average", st.n ? `${cnt(st.avg)}<small> ft</small>` : "–", `${st.n} approach${st.n === 1 ? "" : "es"}`)}
+      ${item("vs " + esc(B.short), gapTxt(st.gap, who), "")}
+      ${item("Change", chg(d, true), "")}
+      ${item("Last 10 rounds", spark, pts.length >= 2 ? "higher = farther" : "")}</div></div>`;
   }
   function detail(c, w, x) {
     const vals = x.list.map(s => s.norm);
@@ -363,13 +421,12 @@
     const max = Math.max(30, ...stats.map(x => Math.max(x.st.avg || 0, x.st.ben || 0)));
     const top = Math.ceil(max / 10) * 10;
     const tr = rounds ? r => { const sel = rr => rr.map(o => ({ ...o, shots: o.shots.filter(x => proxRange(x.yd) === r.k) })); return proxTrend(sel(rounds)); } : null;
-    return `<div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">Average proximity <span class="muted">(0–${top} ft)</span></span><span class="show-sm">Average</span></th>${B ? `<th class="r">${esc(B.short)}</th>` : ""}<th class="r">Greens</th>${tr ? `<th class="r hide-sm">Vs before</th>` : ""}</tr></thead><tbody>
+    return `<div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">Average proximity <span class="muted">(0–${top} ft)</span></span><span class="show-sm">Average</span> ${info("Bar: average distance from the hole after the approach. Shorter is closer." + (B ? " Gold dash: " + B.name + " average." : ""))}</th>${B ? `<th class="r">${esc(B.short)} ${info(B.name + " average from the team’s shots in that range (the same on every player’s page). No published number under 50 yards or from bunkers; rough is an estimate.")}</th>` : ""}<th class="r">Greens</th>${tr ? `<th class="r hide-sm">Vs before ${info("The last 5 rounds compared with older rounds (3+ approaches on each side).")}</th>` : ""}</tr></thead><tbody>
       ${stats.map(({ r, st }) => { const d = tr ? tr(r) : null; return `<tr><td class="yd">${r.label}</td>
-        <td class="r"><span class="cnt"><i class="${level(st.n)}"></i>${st.n}</span></td>
+        <td class="r">${st.n}</td>
         <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft average over ${st.n} approach${st.n === 1 ? "" : "es"}${B && st.ben != null ? ` · ${esc(B.name)} ${Math.round(st.ben)} ft` : ""}" tabindex="0"><span style="${barW(st.avg, top)}"></span><b style="${lblPush(st.avg, B && st.ben, top)}">${Math.round(st.avg)} ft</b>${B && st.ben != null ? benchMark(st.ben, top, B) : ""}</div>`}</td>
         ${B ? `<td class="r">${st.ben != null ? ft(st.ben) : `<span class="muted">–</span>`}</td>` : ""}<td class="r">${st.n ? pct(st.green) : "–"}</td>${tr ? `<td class="r hide-sm ${trendCls(d)}" style="font-size:14px;font-weight:700">${d == null ? `<span class="muted" style="font-weight:400">–</span>` : d === 0 ? "Same" : d < 0 ? `${-d} ft closer` : `${d} ft farther`}</td>` : ""}</tr>`; }).join("")}
-    </tbody></table></div>
-    <div class="legend"><span class="barnote">Bar: average distance from the hole after the approach. Shorter is closer.${B ? ` Gold dash: ${esc(B.name)} average.` : ""}</span><span>Dot: <b class="lo">0–1</b> · <b class="midc">2–4</b> · <b class="hi">5+</b> approaches</span>${B ? `<span>${esc(B.short)}: ${esc(B.name)} average from the team’s shots in that range (the same on every player’s page). No published benchmark under 50 yards or from bunkers; rough is an estimate.</span>` : ""}${tr ? `<span class="hide-sm">Vs before: last 5 rounds vs older rounds</span>` : ""}</div>`;
+    </tbody></table></div>`;
   }
   /* ---------- Benchmarks (Lou, Oct 22) ----------
      Proximity: PGA Tour and scratch-golfer averages from the fairway, by distance (PGA Tour 2021-22 season and
@@ -501,15 +558,17 @@
     const dir = view.odir || 1;
     const sorted = live.slice().sort((a, b) => { const x = key(a), y = key(b); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return (x < y ? -1 : x > y ? 1 : 0) * dir; });
     const hideSm = new Set(["gap", "green", "sg", "n"]);
+    const colInfo = { gap: `Average distance compared with ${B.name} averages from the same distances and lies.`, birdie: "Share of approaches that finished on the green 12 feet or closer to the hole (or holed).",
+      sg: "Strokes gained per approach shot compared with a PGA Tour player from the same distance and lie. Above 0 = better than a tour pro.", d: vsLine(per).replace("Change compares", "Compared") };
     const missing = players.length - live.length;
     const table = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px"><div><h3 style="margin:0 0 2px">All players</h3><span class="muted" style="font-size:14px">Click a column to sort · click a player to open</span></div>
       <label class="dsel"><span>Distance</span><select id="tdist"><option value="all"${td === "all" ? " selected" : ""}>All distances</option>${PROX_RANGES.map(r => `<option value="${r.k}"${r.k === td ? " selected" : ""}>${r.label} yd</option>`).join("")}</select></label></div>
-      <div class="scroll"><table class="pt lb"><thead><tr>${cols.map(([k, l]) => `<th class="${k === "name" ? "" : "r"} ${hideSm.has(k) ? "hide-sm" : ""}"><button type="button" class="th" data-osort="${k}" ${(view.osort || "avg") === k ? "data-on" : ""}>${l}</button></th>`).join("")}</tr></thead><tbody>
+      <div class="scroll"><table class="pt lb"><thead><tr>${cols.map(([k, l]) => `<th class="${k === "name" ? "" : "r"} ${hideSm.has(k) ? "hide-sm" : ""}"><button type="button" class="th" data-osort="${k}" ${(view.osort || "avg") === k ? "data-on" : ""}>${l}</button>${colInfo[k] ? info(colInfo[k]) : ""}</th>`).join("")}</tr></thead><tbody>
       ${sorted.map(r => `<tr class="player" tabindex="0" data-player="${esc(r.p.id)}"><td><div class="who">${av(r.p)}<b>${esc(r.p.name)}</b></div></td>
         <td class="r big">${cnt(r.st.avg)}<small> ft</small></td><td class="r hide-sm">${gapTxt(r.st.gap, who)}</td><td class="r">${chg(r.d, true)}</td>
         <td class="r hide-sm">${pct(r.st.green)}</td><td class="r">${pct(r.st.birdie)}</td>${women ? "" : `<td class="r hide-sm">${sgTxt(r.st.sg)}</td>`}<td class="r hide-sm">${r.st.n}</td></tr>`).join("") || `<tr><td colspan="8" class="muted">No approaches ${td === "all" ? "" : `from ${tdLabel} yards `}in this period yet.</td></tr>`}
       </tbody></table></div>
-      <div class="legend"><span><b>vs ${esc(B.short)}:</b> average distance compared with ${esc(B.name)} averages from the same distances and lies</span><span><b>Birdie chances (12 ft & in):</b> share of approaches that finished on the green 12 feet or closer to the hole</span>${women ? "" : `<span><b>SG: Approach (vs PGA Tour):</b> strokes gained per approach shot compared with a PGA Tour player from the same distance and lie. Above 0 = better than a tour pro.</span>`}${missing > 0 ? `<span>${missing} player${missing === 1 ? " has" : "s have"} no approaches ${td === "all" ? "" : `from ${tdLabel} yards `}in this period.</span>` : ""}</div></div>`;
+      ${missing > 0 ? `<p class="muted" style="font-size:13px;margin:12px 0 0">${missing} player${missing === 1 ? " has" : "s have"} no approaches ${td === "all" ? "" : `from ${tdLabel} yards `}in this period.</p>` : ""}</div>`;
     /* By distance (lie filter lives here) and team trend. */
     const dl = view.dlie || "all";
     /* Player filter (Lou, Oct 22): the whole team, or one player's approaches in the same period. */
@@ -530,22 +589,22 @@
     /* Tour Shots to Hole Out: what a PGA Tour pro averages to hole out from the team's own shots in that range
        (each shot's exact yardage and lie), so All lies reflects the real fairway/rough/bunker mix (Lou, Oct 22). */
     const tourFinish = list => list.length ? list.reduce((a, x) => a + holeOut(x.lie === "rough" || x.lie === "bunker" ? x.lie : "fairway", x.yd), 0) / list.length : null;
-    const dist = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px"><div><h3 style="margin:0 0 2px">By distance</h3><p class="muted" style="margin:0;font-size:15px">${dp ? esc(dp.name) + "’s" : "Team"} average distance from the hole, with ${esc(B.name)} averages from the team’s shots (they stay the same for every player).</p></div>
+    const dist = `<div class="panel"><div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px"><div><h3 style="margin:0 0 2px">By distance</h3><p class="muted" style="margin:0;font-size:15px">${dp ? esc(dp.name) + "’s" : "Team"} average distance from the hole, compared with the ${esc(B.name)}.${hl ? " Highlighted: the biggest gap." : ""}</p></div>
         <div class="dsels"><label class="dsel"><span>Player</span><select id="dplayer"><option value="all"${dp ? "" : " selected"}>All players</option>${withRounds.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${esc(p.id)}"${dp && dp.id === p.id ? " selected" : ""}>${esc(p.name)}</option>`).join("")}</select></label>
         <label class="dsel"><span>Lie</span><select id="dlie">${LIES.map(([k, l]) => `<option value="${k}"${k === dl ? " selected" : ""}>${l}</option>`).join("")}</select></label></div></div>
-      <div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">${dp ? "Average" : "Team average"} <span class="muted">(0–${top} ft)</span></span><span class="show-sm">${dp ? "Avg" : "Team"}</span></th><th class="r">${esc(B.short)}</th><th class="r hide-sm">Greens</th>${women ? "" : `<th class="r hide-sm">Tour Shots to Hole Out</th>`}</tr></thead><tbody>
+      <div class="scroll"><table class="pt"><thead><tr><th>Yards</th><th class="r"><span class="hide-sm">Approaches</span><span class="show-sm">Shots</span></th><th class="barh"><span class="hide-sm">${dp ? "Average" : "Team average"} <span class="muted">(0–${top} ft)</span></span><span class="show-sm">${dp ? "Avg" : "Team"}</span> ${info("Bar: " + (dp ? who1 + "’s" : "team") + " average distance from the hole. Gold dash: " + B.name + " average.")}</th><th class="r">${esc(B.short)} ${info(B.name + " average from the team’s shots in that range and lie, so it stays the same for every player. No published number under 50 yards or from bunkers" + (dl !== "fairway" ? "; rough is an estimate." : "."))}</th><th class="r hide-sm">Greens</th>${women ? "" : `<th class="r hide-sm">Tour Shots to Hole Out ${info("How many shots a PGA Tour pro averages to hole out from the team’s shots in that range (same yardages and lies). Lower = easier shots.")}</th>`}</tr></thead><tbody>
       ${drows.map(({ r, st }) => { return `<tr${hl && hl.r.k === r.k ? ' class="worst"' : ""}><td class="yd">${r.label}</td><td class="r">${st.n}</td>
         <td class="barh">${st.avg == null ? `<span class="muted">–</span>` : `<div class="hb" data-tip="${r.label} yd: ${Math.round(st.avg)} ft ${dp ? esc(who1) + " average" : "team average"} over ${st.n} approach${st.n === 1 ? "" : "es"}${st.ben != null ? ` · ${esc(B.name)} ${Math.round(st.ben)} ft` : ""}" tabindex="0"><span style="${barW(st.avg, top)}"></span><b style="${lblPush(st.avg, st.ben, top)}">${Math.round(st.avg)} ft</b>${st.ben != null ? benchMark(st.ben, top, B) : ""}</div>`}</td>
         <td class="r">${st.ben != null ? ft(st.ben) : `<span class="muted">–</span>`}</td>
         <td class="r hide-sm">${st.n ? pct(st.green) : "–"}</td>${women ? "" : `<td class="r hide-sm">${(() => { const v = tourFinish(teamL.filter(x => proxRange(x.yd) === r.k)); return (v != null ? v : holeOut(dl === "rough" || dl === "bunker" ? dl : "fairway", RANGE_MID[r.k])).toFixed(2); })()}</td>`}</tr>`; }).join("")}
       </tbody></table></div>
-      <div class="legend"><span class="barnote">Bar: ${dp ? esc(who1) + "’s" : "team"} average. Gold dash: ${esc(B.name)} average.${hl ? ` Highlighted: the biggest gap to ${esc(B.short)}.` : ""}</span><span>No published benchmark under 50 yards or from bunkers.${dl !== "fairway" ? " Rough benchmarks are estimates." : ""}</span>${women ? "" : `<span class="hide-sm">Tour Shots to Hole Out: how many shots a PGA Tour pro averages to hole out from the team’s shots in that range (same yardages and lies). Lower = easier shots.</span>`}</div></div>`;
+</div>`;
     const months = [...new Set(withRounds.flatMap(p => p.rounds.map(r => monthKey(r.day))))].sort().reverse();
     const monthPts = months.slice(0, 12).reverse().map(k => { const st = pstat(withRounds.flatMap(p => inMonth(p.rounds, k)).flatMap(r => r.shots)); return st.n ? { label: monthName(k), y: st.avg, tip: `${monthName(k, true)}: ${Math.round(st.avg)} ft team average over ${st.n} approaches` } : null; }).filter(Boolean);
     const trend = `<div class="panel"><h3 style="margin-bottom:2px">Team trend</h3><p class="muted" style="margin:0 0 12px;font-size:15px">Team average distance from the hole, month by month. Lower is better.</p>
       ${monthPts.length >= 2 ? lineChart(monthPts, "Team average proximity by month", true) : `<div class="empty-state" style="padding:28px 8px">The trend line shows once there are rounds in 2 different months.</div>`}</div>`;
     return bar + `<div class="qcards">${c1}${c2}${c3}</div>` + table + dist + trend
-      + `<p class="muted" style="font-size:13px;margin:6px 0 0">${women ? "Women’s team: compared with scratch golfers (published LPGA averages by distance aren’t available yet). " : ""}Benchmarks: PGA Tour and scratch-golfer averages from the fairway (PGA Tour stats and Arccos data, via Golf Digest); rough estimated from tour rough vs fairway averages. Strokes gained uses Mark Broadie’s PGA Tour tables.</p>`;
+      + `<p class="muted srcline">Where the benchmarks come from ${info((women ? "Women’s team: compared with scratch golfers (published LPGA averages by distance aren’t available yet). " : "") + "PGA Tour and scratch-golfer averages from the fairway (PGA Tour stats and Arccos data, via Golf Digest); rough estimated from tour rough vs fairway averages. Strokes gained uses Mark Broadie’s PGA Tour tables.")}</p>`;
   }
   /* A plain line chart: one dot per point, labeled with its value. Higher = farther from the hole.
      Drawn at the real page width so labels stay readable on phones and big screens. */
@@ -706,6 +765,7 @@
     app.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => { if (view.sort === b.dataset.sort) view.dir *= -1; else { view.sort = b.dataset.sort; view.dir = 1; } draw(); });
     app.querySelectorAll("[data-cell]").forEach(td => { const pick = () => { view.cell = td.dataset.cell; draw(); }; td.onclick = pick; td.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } }; });
     const ro = $("rpo"); if (ro) ro.onclick = openReport;
+    const sh = $("sh"); if (sh) sh.onclick = () => { try { localStorage.setItem(setupKey(), "1"); } catch {} const y = window.scrollY; draw(); window.scrollTo({ top: y }); };
     const q = $("q"); if (q) q.oninput = () => { view.q = q.value; const pos = q.selectionStart; draw(); const n = $("q"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {} };
     if (view.tab !== "team") return;
     const t = L.t, msg = `Join ${t.name} on WedgeLab. Download WedgeLab from the App Store, sign in, then open Settings (the gear on Home) → Join a team, and enter code ${t.code}.`;
@@ -767,6 +827,7 @@
       if (!window.WEDGELAB_DEMO) await new Promise(res => { const sc = document.createElement("script"); sc.src = "coach-demo.js?v=" + Date.now().toString(36).slice(0, 5); sc.onload = res; sc.onerror = res; document.head.appendChild(sc); });
       if (!window.WEDGELAB_DEMO) return html(`<p class="err">Couldn’t load the demo team. Refresh the page to try again.</p>`);
       if (/[?&]women=1/.test(location.search)) window.WEDGELAB_DEMO.team.gender = "women";
+      if (/[?&]setup=1/.test(location.search)) Object.assign(window.WEDGELAB_DEMO.team, { logo: null, color: null, gender: null }); // preview the Getting started checklist
       return team(window.WEDGELAB_DEMO.session, window.WEDGELAB_DEMO.team);
     }
     const { data: { session } } = await sb.auth.getSession();

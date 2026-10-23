@@ -437,6 +437,37 @@ body.rp-open{overflow:hidden}
   .rkpis,.rcols{grid-template-columns:repeat(3,1fr)!important}.rpm{display:flex!important}
   .rnobreak,.rbox,.rk,.rtab tr{break-inside:avoid}
 }
+/* ---- ⓘ explanations instead of fine print (Lou, Oct 22) ---- */
+.ii{display:inline-grid;place-items:center;vertical-align:middle;width:22px;height:22px;margin-left:2px;padding:0;border:0;background:none;color:var(--muted);cursor:help;border-radius:50%}
+.ii:hover,.ii:focus-visible{color:var(--ink);background:var(--panel)}
+.tip.wide{white-space:normal;max-width:min(300px,calc(100vw - 24px));text-align:left;line-height:1.45;font-weight:500;padding:9px 12px}
+h3.ih{display:flex;align-items:center;gap:4px}
+.srcline{font-size:13px;margin:10px 0 0;display:flex;align-items:center;gap:2px}
+th .ii{width:20px;height:20px}
+/* ---- Getting started checklist ---- */
+.setup .sbar{height:6px;border-radius:3px;background:var(--panel);margin:14px 0 6px;overflow:hidden}
+.setup .sbar span{display:block;height:100%;background:var(--tc,var(--navy));border-radius:3px;transition:width .5s ease}
+.chk{list-style:none;margin:0;padding:0}
+.chk li{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+.chk li:last-child{border-bottom:0}
+.chk .chk-n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;border:1.5px solid var(--line);color:var(--muted)}
+.chk li.done .chk-n{background:var(--tc,var(--navy));border-color:transparent;color:#fff}
+.chk li.next .chk-n{border-color:var(--gold);color:var(--ink)}
+.chk .chk-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.chk .chk-t span{font-size:14px;color:var(--muted)}
+.chk li.done .chk-t b{color:var(--muted);font-weight:700}
+.chk .sgo{min-height:38px;padding:0 14px;font-size:14px;white-space:nowrap}
+/* ---- Player summary strip ---- */
+.psum{flex-basis:100%;border-top:1px solid var(--line);padding-top:14px;margin-top:2px}
+.pper{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:8px}
+.psrow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.psi .pl{font-size:12px;font-weight:700;color:var(--muted)}
+.psi .pv{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-top:2px;white-space:nowrap}
+.psi .pv small{font-size:13px;color:var(--muted);font-weight:700}
+.psi .pv .chg{font-size:16px}.psi .ps{font-size:12px;color:var(--muted)}
+svg.spark{display:block;margin-top:4px}svg.spark path{fill:none;stroke:var(--tc,var(--navy));stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}svg.spark circle{fill:var(--gold);stroke:var(--bg);stroke-width:1.5}
+@media (max-width:760px){.psrow{grid-template-columns:repeat(2,minmax(0,1fr))}.psi:last-child{grid-column:1/-1}}
+@media (max-width:600px){.chk li{flex-wrap:wrap}.chk .sgo{margin-left:42px}}
 .tabs.dtabs{position:sticky;top:68px;z-index:40;background:var(--bg);margin-top:-8px;padding-top:8px;box-shadow:0 0 0 100vmax var(--bg);clip-path:inset(0 -100vmax)}
 @media (max-width:820px){.qcards{grid-template-columns:1fr}}
 .chg{display:inline-flex;align-items:center;gap:3px;font-weight:800;white-space:nowrap;font-size:14px}
@@ -446,7 +477,7 @@ table.lb td{padding-top:12px;padding-bottom:12px}table.lb tr.player{cursor:point
 table.lb .rk{width:34px;color:var(--muted);font-weight:700}table.lb td.big{font-size:20px;font-weight:800;white-space:nowrap}table.lb td.big small{font-size:13px;color:var(--muted)}
 .av.sm{width:32px;height:32px;font-size:12px}
 table.pt tr.worst td{background:rgba(201,164,76,.10)}table.pt tr.worst td:first-child{box-shadow:inset 3px 0 0 var(--gold);padding-left:12px}
-svg.tc .pt.hl{fill:var(--navy);stroke:var(--gold)}
+svg.tc .pt.hl{fill:var(--tc,var(--navy));stroke:var(--gold)}
 .months{flex-wrap:wrap}
 h3.sect{margin:30px 0 12px;font-size:20px}
 .chips .lab{font-size:13px;font-weight:700;color:var(--muted);margin-right:4px;align-self:center}
@@ -456,7 +487,7 @@ table.pt td{padding:13px 10px 13px 0;border-bottom:1px solid var(--line);vertica
 table.pt .r{text-align:right}table.pt td.yd{font-weight:800;white-space:nowrap}
 table.pt th.barh{padding-left:22px}table.pt td.barh{padding-left:22px;width:46%}
 .hb{position:relative;display:flex;align-items:center;gap:10px;height:22px}
-.hb span{display:block;height:10px;border-radius:5px;background:var(--navy);flex:none;max-width:calc(100% - 64px)}
+.hb span{display:block;height:10px;border-radius:5px;background:var(--tc,var(--navy));flex:none;max-width:calc(100% - 64px)}
 .hb b{font-weight:800;white-space:nowrap}
 .cnt{display:inline-flex;align-items:center;gap:7px;justify-content:flex-end}
 .cnt i{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
@@ -471,7 +502,7 @@ svg.tc{max-width:100%}
 svg.tc{display:block;overflow:visible;margin-top:6px}
 svg.tc .ax{stroke:var(--line);stroke-width:1.5}
 svg.tc .axt{font-size:12px;font-weight:700;fill:var(--muted)}
-svg.tc .ln{fill:none;stroke:var(--navy);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+svg.tc .ln{fill:none;stroke:var(--tc,var(--navy));stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
 svg.tc .pt{fill:var(--gold);stroke:var(--bg);stroke-width:2.5}
 svg.tc .pl{font-size:13px;font-weight:800;fill:var(--ink)}
 svg.tc .dt{font-size:12px;fill:var(--muted)}
