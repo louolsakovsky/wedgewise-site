@@ -63,7 +63,10 @@
     const st = p.state || {};
     const swings = st.system === "custom" && st.custom && st.custom.efforts ? st.custom.efforts : FRACTION;
     const clubs = (st.clubs || []).slice().sort((a, b) => BAG.indexOf(a.name) - BAG.indexOf(b.name));
-    const shots = (st.shots || []).filter(x => !x.wet && x.carry > 0 && x.tempF != null && x.elevFt != null && swings.some(w => w.k === x.swing));
+    /* Linked swings (same as the app): a custom effort also shows the shots of the swings in its "from" list. */
+    const links = {}; if (swings !== FRACTION) swings.forEach(w => { if (w.label && String(w.label).trim()) (w.from || []).forEach(k => { links[k] = w.k; }); });
+    const shots = (st.shots || []).map(x => (swings.some(w => w.k === x.swing) || !links[x.swing] ? x : Object.assign({}, x, { swing: links[x.swing] })))
+      .filter(x => !x.wet && x.carry > 0 && x.tempF != null && x.elevFt != null && swings.some(w => w.k === x.swing));
     const cells = {};
     shots.forEach(x => { const k = x.clubId + "|" + x.swing; (cells[k] = cells[k] || []).push({ shot: x, norm: toStd(x.carry, x.tempF, x.elevFt), t: Date.parse(x.date) || 0 }); });
     const cut = Date.now() - 28 * DAY;
