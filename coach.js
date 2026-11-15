@@ -202,11 +202,11 @@
     html(`<div class="panel" style="max-width:520px;margin-top:12px">
       <div class="tabs" role="tablist"><button type="button" role="tab" id="t-in" aria-selected="${!up}">Log in</button><button type="button" role="tab" id="t-up" aria-selected="${up}">Sign up</button></div>
       <h2>${up ? "Create your coach account" : "Welcome back, coach"}</h2>
-      <p class="muted">${up ? "Enter your school email and we’ll send you a link. Open it and you’ll set up your team next. No password needed." : "Enter your email and we’ll send you a link to your Coaching Dashboard. No password needed."}</p>
+      <p class="muted">${up ? "Enter your school email and we’ll send you a 6-digit code. Enter it here and you’ll set up your team next. No password needed." : "Enter your email and we’ll send you a 6-digit code for your Coaching Dashboard. No password needed."}</p>
       <form id="f"><label class="field"><span>Email</span><input id="em" type="email" autocomplete="email" required placeholder="coach@school.edu"></label>
-      <button class="btn" type="submit">${up ? "Email me a sign-up link" : "Email me a login link"}</button></form>
+      <button class="btn" type="submit">Email me a code</button></form>
       <p id="m" class="${msg && msg.ok ? "ok" : "err"}">${esc(msg ? msg.text : "")}</p>
-      <p class="muted" style="font-size:14px;margin-bottom:0">Open the link on this same device. ${up ? "" : "New here? Tap Sign up. "}<a href="teams.html">About WedgeLab Teams</a></p></div>`);
+      <p class="muted" style="font-size:14px;margin-bottom:0">${up ? "" : "New here? Tap Sign up. "}<a href="teams.html">About WedgeLab Teams</a></p></div>`);
     $("t-in").onclick = () => { mode = "login"; login(); };
     $("t-up").onclick = () => { mode = "signup"; login(); };
     $("f").onsubmit = async e => {
@@ -215,8 +215,39 @@
       const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + "/coach.html" } });
       const m = $("m");
       if (error) { m.className = "err"; m.textContent = "That didn’t send. Check the email address and try again in a minute." + (error.message ? " (" + error.message + ")" : ""); return; }
-      m.className = "ok"; m.textContent = "Check your email for the link."; clearDraft("em");
+      clearDraft("em"); codeStep(email);
     };
+  }
+  /* Code step (Lou, Nov 15): the email has a 6-digit code and a link. Typing the code works even when a school's email
+     scanner (e.g. Outlook Safe Links) has already opened, and used up, the one-time link, or the link opens on another device. */
+  function codeStep(email, msg) {
+    const up = mode === "signup";
+    html(`<div class="panel" style="max-width:520px;margin-top:12px">
+      <h2>Check your email</h2>
+      <p class="muted">We sent a 6-digit code to <b>${esc(email)}</b>. Enter it below, or tap the button in the email. Not there in a minute? Check your spam or junk folder.</p>
+      <form id="f"><label class="field"><span>Code</span><input id="cd" inputmode="numeric" autocomplete="one-time-code" maxlength="8" required placeholder="123456" style="font-size:24px;font-weight:800;letter-spacing:6px"></label>
+      <button class="btn" type="submit">${up ? "Continue" : "Log in"}</button></form>
+      <p id="m" class="${msg && msg.ok ? "ok" : "err"}">${esc(msg ? msg.text : "")}</p>
+      <p class="muted" style="font-size:14px;margin-bottom:0"><a href="#" id="rs">Send a new code</a> · <a href="#" id="ch">Use a different email</a></p></div>`);
+    const inp = $("cd"); inp.focus();
+    const go = async () => {
+      const token = inp.value.replace(/\D/g, ""), m = $("m");
+      if (token.length < 6) { m.className = "err"; m.textContent = "Enter the 6-digit code from the email."; return; }
+      m.className = "ok"; m.textContent = "Checking…";
+      let r = await sb.auth.verifyOtp({ email, token, type: "email" });
+      if (r.error) { const r2 = await sb.auth.verifyOtp({ email, token, type: "signup" }); if (!r2.error) r = r2; }
+      if (r.error) { m.className = "err"; m.textContent = /expired|invalid/i.test(r.error.message || "") ? "That code didn’t work. Use the newest email, or send a new code." : "Couldn’t log in. Check your connection and try again."; return; }
+      m.textContent = "";  /* onAuthStateChange draws the dashboard */
+    };
+    $("f").onsubmit = e => { e.preventDefault(); go(); };
+    inp.oninput = () => { const v = inp.value.replace(/\D/g, ""); if (v !== inp.value) inp.value = v; if (v.length === 6 && inp.dataset.pasted) go(); inp.dataset.pasted = ""; };
+    inp.onpaste = () => { inp.dataset.pasted = "1"; };
+    $("rs").onclick = async e => {
+      e.preventDefault();
+      const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + "/coach.html" } });
+      codeStep(email, error ? { text: "A code was just sent. Wait a minute, then try again." } : { ok: true, text: "New code sent. Use the newest email." });
+    };
+    $("ch").onclick = e => { e.preventDefault(); login(); };
   }
 
   function create(session) {
