@@ -58,7 +58,7 @@
       t += (7 + Math.floor(r() * 6)) * DAY; ri++;
     }
     return {
-      user_id: "demo-" + i, name, role: "player", joined_at: iso(NOW - (60 + i * 3) * DAY),
+      user_id: "demo-" + i, name, role: "player", grad_year: new Date(NOW).getFullYear() + (new Date(NOW).getMonth() >= 6 ? 1 : 0) + (i % 4), joined_at: iso(NOW - (60 + i * 3) * DAY),
       state: { v: 1, profile: { name, handicap: hcp, level: "College" }, system: "fraction", units: { dist: "yd", temp: "F", elev: "ft" }, clubs, shots, rounds },
     };
   }

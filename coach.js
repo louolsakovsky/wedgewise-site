@@ -84,7 +84,7 @@
     /* Proximity rounds (approach shots from real rounds). Newest first; only rounds with shots count. */
     const rounds = (st.rounds || []).filter(r => r && Array.isArray(r.shots) && r.shots.length)
       .slice().sort((a, b) => (String(b.day) + (b.created || "")).localeCompare(String(a.day) + (a.created || "")));
-    return { id: p.user_id, name, prof, joined: p.joined_at, swings, clubs, cell, all, rounds, hasState: !!p.state, coach: p.role === "coach" };
+    return { id: p.user_id, name, prof, joined: p.joined_at, grad: p.grad_year || null, swings, clubs, cell, all, rounds, hasState: !!p.state, coach: p.role === "coach" };
   }
   const level = n => (n >= 5 ? "hi" : n >= 2 ? "midc" : "lo");
   const initials = n => { const w = String(n).trim().split(/\s+/).filter(Boolean); return w.length ? (w[0][0] + (w.length > 1 ? w[w.length - 1][0] : "")).toUpperCase() : "?"; };
@@ -299,18 +299,25 @@
   const go = (tab, player) => { animNext = true; view.tab = tab; view.player = player || null; if (!player) view.cell = null; const h = player ? "player=" + encodeURIComponent(player) : tab; if (location.hash.slice(1) !== h) history.pushState(null, "", "#" + h); draw(); window.scrollTo({ top: 0 }); };
   window.addEventListener("popstate", () => { fromHash(); draw(); });
 
+  /* Graduation year (Lou, Nov 17): players pick it when they join; on July 1 of that year they come off the team.
+     The database removes them; this also hides them right away. Coaches can change the year or remove a player. */
+  const graduated = y => { if (!y) return false; const n = new Date(); return n.getFullYear() > y || (n.getFullYear() === +y && n.getMonth() >= 6); };
+  const firstClass = () => { const n = new Date(); return n.getFullYear() + (n.getMonth() >= 6 ? 1 : 0); };
+  const demoGone = new Set(), demoRemoved = [];
   let shownAt = 0, last = null; // last = { session, team, players, invites }
   async function team(session, t) {
     const active = t.status === "active";
     if (justPaid && !active && paidChecks < 30 && !pollTimer) pollTimer = setTimeout(pollPaid, 4000);
-    const [{ data: invites }, { data: roster }] = DEMO ? [{ data: window.WEDGELAB_DEMO.invites }, { data: window.WEDGELAB_DEMO.roster }] : await Promise.all([
+    const [{ data: invites }, { data: roster }, { data: removed }] = DEMO ? [{ data: window.WEDGELAB_DEMO.invites }, { data: window.WEDGELAB_DEMO.roster }, { data: demoRemoved }] : await Promise.all([
       sb.from("team_invites").select("email,created_at,sent_at").eq("team_id", t.id).order("created_at"),
       sb.rpc("coach_roster"),
+      sb.rpc("coach_removed"), // team_grad.sql; null until Lou runs it
     ]);
     const inv = invites || [];
     /* Players added before the team was switched on get their emails the first time the coach opens the dashboard after. */
     if (!DEMO && active && !autoSent && inv.some(x => !x.sent_at)) { autoSent = true; await sendInvites(); return render(); }
-    last = { session, t, active, players: (roster || []).map(analyze).filter(p => !p.coach), inv }; // coach accounts are not listed (Lou, Oct 22)
+    const gone = DEMO ? demoGone : new Set();
+    last = { session, t, active, players: (roster || []).filter(p => !gone.has(p.user_id) && !graduated(p.grad_year)).map(analyze).filter(p => !p.coach), inv, removed: removed || [] }; // coach accounts are not listed (Lou, Oct 22)
     shownAt = Date.now();
     draw();
   }
@@ -359,18 +366,18 @@
   /* ---------- Players: sortable roster ---------- */
   function playersTab() {
     const { players } = last;
-    if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Players appear here once they join with your team code.</p><button class="btn" type="button" data-tab="team">Go to Settings</button></div>`;
+    if (!players.length) return `<div class="panel empty-state"><h3 style="color:var(--ink)">No players yet</h3><p>Players appear here once they join with your team code.</p><button class="btn" type="button" data-tab="team">Go to Settings</button></div>${removedPanel()}`;
     const q = view.q.trim().toLowerCase();
-    const key = { name: p => p.name.toLowerCase(), joined: p => -(Date.parse(p.joined) || 0) }[view.sort] || (p => p.name.toLowerCase());
+    const key = { name: p => p.name.toLowerCase(), grad: p => p.grad || 9999, joined: p => -(Date.parse(p.joined) || 0) }[view.sort] || (p => p.name.toLowerCase());
     const list = players.filter(p => !q || p.name.toLowerCase().includes(q)).sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * view.dir);
     const th = (k, l, cls = "") => `<th class="${cls}"><button type="button" data-sort="${k}" ${view.sort === k ? "data-on" : ""}>${l} ${ic("sort", 14)}</button></th>`;
     return `<div class="panel">
       <div class="row" style="justify-content:space-between;margin-bottom:14px"><h3 style="margin:0">Roster</h3><input class="search" id="q" data-draft="no" type="search" placeholder="Search players" value="${esc(view.q)}" style="max-width:280px" aria-label="Search players"></div>
-      <div class="scroll"><table class="roster"><thead><tr>${th("name", "Player")}${th("joined", "Joined", "hide-sm")}<th></th></tr></thead><tbody>
+      <div class="scroll"><table class="roster"><thead><tr>${th("name", "Player")}${th("grad", "Class")}${th("joined", "Joined", "hide-sm")}<th></th></tr></thead><tbody>
       ${list.map(p => `<tr class="player" tabindex="0" data-player="${esc(p.id)}"><td><div class="who"><span class="av">${esc(initials(p.name))}</span><div><b>${esc(p.name)}</b>${p.coach ? ' <span class="pill">Coach</span>' : ""}<div class="muted" style="font-size:13px">${p.coach ? "Coach account" : esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level].filter(Boolean).join(" · ") || "WedgeLab player")}</div></div></div></td>
-        <td class="hide-sm muted">${p.joined ? dateShort(p.joined) : "–"}</td><td class="go">${ic("chevron")}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">No players match “${esc(view.q)}”.</td></tr>`}
+        <td class="muted">${p.grad ? p.grad : "–"}</td><td class="hide-sm muted">${p.joined ? dateShort(p.joined) : "–"}</td><td class="go">${ic("chevron")}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">No players match “${esc(view.q)}”.</td></tr>`}
       </tbody></table></div>
-      <p class="muted" style="font-size:14px;margin:14px 0 0">Tap a player to see their proximity and wedge numbers.</p></div>`;
+      <p class="muted" style="font-size:14px;margin:14px 0 0">Tap a player to see their proximity and wedge numbers. Players come off the team on July 1 of their class year.</p></div>${removedPanel()}`;
   }
 
   /* ---------- One player: proximity, then the number matrix and the spread of shots behind a number ---------- */
@@ -379,8 +386,8 @@
     if (!p) return `<button class="back" type="button" data-tab="players">${ic("back")} Roster</button><div class="panel empty-state">This player isn’t on the team anymore.</div>`;
     const head = `<button class="back" type="button" data-tab="players">${ic("back")} Roster</button>
       <div class="panel" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><span class="av" style="width:56px;height:56px;font-size:20px">${esc(initials(p.name))}</span>
-        <div style="flex:1;min-width:180px"><h2 style="margin:0">${esc(p.name)}</h2><div class="muted">${esc([p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level, p.joined ? "Joined " + dateShort(p.joined) : ""].filter(Boolean).join(" · "))}</div></div>${playerSummary(p)}</div>`;
-    if (!p.hasState || !p.clubs.length) return head + `<div class="panel empty-state">${p.hasState ? "This player hasn’t finished setup yet." : "Numbers show once the team is active and the player has logged shots."}</div>` + (p.rounds.length ? playerProx(p) : "");
+        <div style="flex:1;min-width:180px"><h2 style="margin:0">${esc(p.name)}</h2><div class="muted">${esc([p.grad ? "Class of " + p.grad : "", p.prof.handicap ? "Handicap " + p.prof.handicap : "", p.prof.level, p.joined ? "Joined " + dateShort(p.joined) : ""].filter(Boolean).join(" · "))}</div></div>${playerSummary(p)}</div>`;
+    if (!p.hasState || !p.clubs.length) return head + `<div class="panel empty-state">${p.hasState ? "This player hasn’t finished setup yet." : "Numbers show once the team is active and the player has logged shots."}</div>` + (p.rounds.length ? playerProx(p) : "") + memberPanel(p);
     if (!view.cell || !p.all.some(x => x.club.id + "|" + x.swing.k === view.cell)) { const top = p.all.slice().sort((a, b) => b.n - a.n)[0]; view.cell = top ? top.club.id + "|" + top.swing.k : null; }
     const mx = `<div class="scroll"><table class="mx"><thead><tr><th>Club</th>${p.swings.map(w => `<th>${esc(w.label)}</th>`).join("")}</tr></thead><tbody>
       ${p.clubs.map(c => `<tr><td class="cl">${esc(c.name)}${c.loft != null ? `<small>${esc(c.loft)}°</small>` : ""}</td>${p.swings.map(w => { const x = p.cell(c.id, w.k), k = c.id + "|" + w.k; return x
@@ -390,7 +397,26 @@
     const [cid, k] = (view.cell || "|").split("|");
     const c = p.clubs.find(x => x.id === cid), w = p.swings.find(x => x.k === k), x = c && w ? p.cell(cid, k) : null;
     /* Proximity (real-round results) first, then the wedge numbers (Lou, Oct 19). */
-    return head + playerProx(p) + `<h3 class="sect">Wedge numbers</h3><div class="grid2"><div class="panel"><h3 class="ih">Numbers ${info("Big number: carry in yards, normalized to 75°F at sea level. Small number: shots behind it. Color: red 0–1, yellow 2–4, green 5+ shots (same as the app).")}</h3>${mx}</div>${x ? `<div class="panel dpanel">${detail(c, w, x)}</div>` : ""}</div>`;
+    return head + playerProx(p) + `<h3 class="sect">Wedge numbers</h3><div class="grid2"><div class="panel"><h3 class="ih">Numbers ${info("Big number: carry in yards, normalized to 75°F at sea level. Small number: shots behind it. Color: red 0–1, yellow 2–4, green 5+ shots (same as the app).")}</h3>${mx}</div>${x ? `<div class="panel dpanel">${detail(c, w, x)}</div>` : ""}</div>` + memberPanel(p);
+  }
+  /* Bottom of a player's page: class year and Remove from team (Lou, Nov 17). */
+  function memberPanel(p) {
+    const f = firstClass(), years = []; for (let y = f - 1; y <= f + 6; y++) years.push(y);
+    if (p.grad && !years.includes(+p.grad)) years.unshift(+p.grad);
+    return `<h3 class="sect">Team membership</h3><div class="panel"><div class="row dsel" style="gap:14px;align-items:center;flex-wrap:wrap">
+        <label for="gy" style="font-weight:700">Class of</label>
+        <select id="gy" data-user="${esc(p.id)}"><option value="">Not set</option>${years.map(y => `<option value="${y}" ${+p.grad === y ? "selected" : ""}>${y}</option>`).join("")}</select>
+        <span class="muted" id="gym" style="font-size:14px">${p.grad ? `Comes off the team on July 1, ${p.grad}.` : "No class year: stays on the team until you remove them."}</span></div>
+      <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px" id="rmw">
+        <button type="button" class="btn ghost" id="rm1" style="color:var(--lo);border-color:var(--lo)">Remove from team</button>
+        <div class="muted" style="font-size:14px;margin-top:8px">They lose team Pro and drop off your dashboard. Their own shots stay in their app.</div></div></div>`;
+  }
+  /* Roster: players the coach removed. They can't rejoin with the code until the coach lets them back on. */
+  function removedPanel() {
+    const r = (last && last.removed) || [];
+    if (!r.length) return "";
+    return `<div class="panel"><h3 style="margin:0 0 4px">Removed players</h3><p class="muted" style="font-size:14px;margin:0 0 10px">They can’t rejoin with your team code unless you let them back on.</p>
+      ${r.map(x => `<div class="row" style="justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)"><span><b>${esc(x.name || "Player")}</b> <span class="muted" style="font-size:13px">· removed ${dateShort(x.removed_at)}</span></span><button type="button" class="linkbtn" data-back="${esc(x.user_id)}" style="color:var(--ink)">Let back on</button></div>`).join("")}</div>`;
   }
   /* Summary strip at the top of a player's page (Lou, Oct 22): team rank, average, vs Tour/Scratch, change and a small
      line of the last 10 rounds, for the Dashboard's "Showing" period. */
@@ -860,6 +886,38 @@
     const ivo = $("ivo"); if (ivo) ivo.onclick = openInvoice;
     const sh = $("sh"); if (sh) sh.onclick = () => { try { localStorage.setItem(setupKey(), "1"); } catch {} const y = window.scrollY; draw(); window.scrollTo({ top: y }); };
     const q = $("q"); if (q) q.oninput = () => { view.q = q.value; const pos = q.selectionStart; draw(); const n = $("q"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {} };
+    const gy = $("gy"); if (gy) gy.onchange = async () => {
+      const m = $("gym"), uid = gy.dataset.user, y = gy.value ? +gy.value : null; m.className = "muted"; m.textContent = "Saving…";
+      if (!DEMO) {
+        const { data, error } = await sb.rpc("coach_set_grad", { p_user: uid, p_grad: y });
+        if (error || (data && data.error)) { m.className = "err"; m.textContent = error ? "Couldn’t save that yet. (Run supabase/team_grad.sql once in Supabase.)" : data.error; return; }
+      }
+      const p = L.players.find(x => x.id === uid); if (p) p.grad = y;
+      if (DEMO) { const r = window.WEDGELAB_DEMO.roster.find(x => x.user_id === uid); if (r) r.grad_year = y; }
+      if (y && graduated(y)) { if (DEMO) demoGone.add(uid); go("players"); return render(); }
+      const sy = window.scrollY; draw(); window.scrollTo({ top: sy });
+      const m2 = $("gym"); m2.className = DEMO ? "muted" : "ok"; m2.textContent = DEMO ? demoNote : y ? `Saved. Comes off the team on July 1, ${y}.` : "Saved. No class year: stays on the team until you remove them.";
+    };
+    const rm1 = $("rm1"); if (rm1) rm1.onclick = () => {
+      const p = L.players.find(x => x.id === view.player); if (!p) return;
+      $("rmw").innerHTML = `<b>Remove ${esc(p.name)} from the team?</b><div class="muted" style="font-size:14px;margin:4px 0 12px">They lose team Pro and drop off your dashboard, and can’t rejoin with your code unless you let them back on (Roster › Removed players).</div>
+        <div class="row" style="gap:10px"><button type="button" class="btn" id="rm2" style="background:var(--lo);color:#fff;box-shadow:none">Remove ${esc(p.name)}</button><button type="button" class="btn ghost" id="rm0">Cancel</button></div><div id="rmm" class="err" style="margin-top:8px"></div>`;
+      $("rm0").onclick = () => { const sy = window.scrollY; draw(); window.scrollTo({ top: sy }); };
+      $("rm2").onclick = async () => {
+        $("rm2").disabled = true; $("rm2").textContent = "Removing…";
+        if (DEMO) { demoGone.add(p.id); demoRemoved.unshift({ user_id: p.id, name: p.name, removed_at: new Date().toISOString() }); go("players"); return render(); }
+        const { data, error } = await sb.rpc("coach_remove_player", { p_user: p.id });
+        if (error || (data && data.error)) { $("rm2").disabled = false; $("rm2").textContent = "Remove " + p.name; $("rmm").textContent = error ? "Couldn’t remove yet. (Run supabase/team_grad.sql once in Supabase.)" : data.error; return; }
+        go("players"); render();
+      };
+    };
+    app.querySelectorAll("[data-back]").forEach(b => b.onclick = async () => {
+      const uid = b.dataset.back; b.disabled = true; b.textContent = "…";
+      if (DEMO) { const i = demoRemoved.findIndex(x => x.user_id === uid); if (i >= 0) demoRemoved.splice(i, 1); demoGone.delete(uid); return render(); }
+      const { error } = await sb.rpc("coach_allow_back", { p_user: uid });
+      if (error) { b.disabled = false; b.textContent = "Let back on"; return; }
+      render();
+    });
     if (view.tab !== "team") return;
     const t = L.t, msg = `Join ${t.name} on WedgeLab. Download WedgeLab from the App Store, sign in, then open Settings (the gear on Home) → Join a team, and enter code ${t.code}.`;
     const tg2 = $("tg2"); if (tg2) tg2.onchange = async () => {
