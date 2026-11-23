@@ -231,7 +231,7 @@
       <p class="muted" style="font-size:14px;margin-bottom:0"><a href="#" id="rs">Send a new code</a> · <a href="#" id="ch">Use a different email</a></p></div>`);
     const inp = $("cd"); inp.focus();
     const go = async () => {
-      const token = inp.value.replace(/\D/g, ""), m = $("m");
+      const token = inp.value.replace(/\D/g, ""), m = $("m"); email = email.trim().toLowerCase();
       if (token.length < 6) { m.className = "err"; m.textContent = "Enter the 6-digit code from the email."; return; }
       m.className = "ok"; m.textContent = "Checking…";
       let r = await sb.auth.verifyOtp({ email, token, type: "email" });
